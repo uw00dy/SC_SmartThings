@@ -1,5 +1,5 @@
 /**
- *  Laundry Monitor
+ *  Laundry Monitor (using energy usage to monitor)
  *
  *  Copyright 2016 Brandon Miller
  *
@@ -32,9 +32,9 @@ preferences {
 	}
     
     section("Notifications") {
-		input "sendPushMessage", "bool", title: "Push Notifications?"
-		input "phone", "phone", title: "Send a text message?", required: false
-            paragraph "For multiple SMS recipients, separate phone numbers with a semicolon(;)"      
+	input "sendPushMessage", "bool", title: "Push Notifications?"
+	input "phone", "phone", title: "Send a text message?", required: false
+        paragraph "For multiple SMS recipients, separate phone numbers with a semicolon(;)"      
 	}
 
 	section("System Variables"){
@@ -45,7 +45,7 @@ preferences {
 	
 	section ("Additionally", hidden: hideOptionsSection(), hideable: true) {
         input "switches", "capability.switch", title: "Turn on these switches?", required:false, multiple:true
-	    input "speech", "capability.speechSynthesis", title:"Speak message via: ", multiple: true, required: false
+	input "speech", "capability.speechSynthesis", title:"Speak message via: ", multiple: true, required: false
 	}
 }
 
@@ -72,7 +72,7 @@ def powerInputHandler(evt) {
     
     if (!atomicState.isRunning && latestPower > minimumWattage) {
     	atomicState.isRunning = true
-		atomicState.startedAt = now()
+	atomicState.startedAt = now()
         atomicState.stoppedAt = null
         atomicState.midCycleCheck = null
         log.trace "Cycle started."
@@ -80,7 +80,7 @@ def powerInputHandler(evt) {
     	if (atomicState.midCycleCheck == null)
         {
         	atomicState.midCycleCheck = true
-            atomicState.midCycleTime = now()
+        	atomicState.midCycleTime = now()
         }
         else if (atomicState.midCycleCheck == true)
         {
