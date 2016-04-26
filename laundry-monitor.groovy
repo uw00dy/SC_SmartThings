@@ -81,7 +81,8 @@ def accelerationInactiveHandler(evt) {
 		if (!state.stoppedAt) {
 			state.stoppedAt = now()
             def delay = Math.floor(fillTime * 60).toInteger()
-			runIn(delay, checkRunning, [overwrite: false])
+			//runIn(delay, checkRunning, [overwrite: false])
+			runIn(delay, checkRunning)
 		}
 	}
 }
