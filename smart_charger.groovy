@@ -12,6 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  Version 1.1 - added enable/disable switch
  */
 definition(
     name: "Smart Charger",
@@ -39,21 +40,31 @@ preferences {
 	section{
     	input(name: "outlet", type: "capability.switch", title: "Turn Off This Power Outlet...", required: true, multiple: false)
 	}
+     section( "Enabled/Disabled" ) {
+        input "enabled","bool", title: "Enabled?", required: true, defaultValue: true
+     }
 }
 
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-	initialize()
+    
+    if (settings.enabled == true) {
+		initialize()
+    }
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
 	unsubscribe()
-	initialize()
+    if (settings.enabled == true) {
+		initialize()
+    }
 }
 
 def initialize() {
-	subscribe(meter, "power", meterHandler)
+	if (settings.enabled == true) {
+		subscribe(meter, "power", meterHandler)
+    }
 }
 
 def meterHandler(evt) {
