@@ -13,6 +13,8 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  Version 1.1 - added enable/disable switch
+ *  Version 1.2 - added delay, there are instance when start to charge, power was below threshold & outlet get turn off
+ *				  this update will wait for 1 mins & if the power go above the threshold, it will cancel the turn off scheduler
  */
 definition(
     name: "Smart Charger",
@@ -81,13 +83,25 @@ def meterHandler(evt) {
     def belowThresholdValue = belowThreshold as double
     if (meterValue < belowThresholdValue) {
     	if (lastValue > belowThresholdValue) { // only send notifications when crossing the threshold
-		    def msg = "${meter} reported ${evt.value} W which is below your threshold of ${belowThreshold} W"
+		    def msg = "Smart Charger: ${meter} reported ${evt.value} W which is below your threshold of ${belowThreshold} W. Turning off in 1 mins."
     	    sendMessage(msg)
-            outlet.off()
+            //outlet.off()
+            runIn(1*60, scheduledHandler)
         } else {
 //        	log.debug "not sending notification for ${evt.description} because the threshold (${belowThreshold}) has already been crossed"
         }
+    } else {
+    	log.debug "${meter} - charging in progress. Cancelling turn off scheduler (if any)."
+        unschedule(scheduledHandler)
     }
+}
+
+def scheduledHandler() {
+	log.debug "Smart Charger: scheduledHandler executed at ${new Date()}"    
+	def msg = "Smart Charger: Turning off the ${meter}!"
+	log.debug "DS - ${msg}"
+    sendMessage(msg)
+    outlet.off()
 }
 
 def sendMessage(msg) {
