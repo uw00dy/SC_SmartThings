@@ -12,6 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  V1.0 - change the orginal cube app to accept color in English
+ * 
  */
 
 /************
@@ -98,7 +100,7 @@ def devicePage(params) {
 				input "onoff_${sceneId}_${light.id}", "boolean", title: light.displayName
 			}
 		}
-
+/*
 		section("Dimmers") {
 			lights.each {light ->
 				if (state.lightCapabilities[light.id] in ["level", "color"]) {
@@ -106,7 +108,7 @@ def devicePage(params) {
 				}
 			}
 		}
-
+*/
 /*
 		section("Colors (hue/saturation)") {
 			lights.each {light ->
@@ -199,17 +201,18 @@ private saveStates(params) {
 		def type = state.lightCapabilities[light.id]
 
 		updateSetting("onoff_${sceneId}_${light.id}", light.currentValue("switch") == "on")
-
+        /*
 		if (type == "level") {
 			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
 		}
+        */
 		/*
 		else if (type == "color") {
 			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
 			updateSetting("color_${sceneId}_${light.id}", "${light.currentValue("hue")}/${light.currentValue("saturation")}")
 		}
 		*/
-		else if (type == "color") {
+		if (type == "color") {
 			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
 			updateSetting("color_${sceneId}_${light.id}", "${light.currentValue("color")}")
 		}		
@@ -265,27 +268,45 @@ private restoreStates(sceneId) {
 			}
 			*/
 			else if (type == "color") {
-				log.debug "${light.displayName} color is level: $level, color: $color"
-				if (level != null) {
-					if ($color == "warm") {
-						light.setColor ([red:255, level:100, blue:172, saturation:32.54901766777039, hue:13.85542168674699, green:241, alpha:1])
+				//log.debug "${light.displayName} color is level: $level, color: " 
+                log.debug settings."color_${sceneId}_${light.id}"
+                def colour = settings."color_${sceneId}_${light.id}"  
+                log.debug "Changing to colour: ${colour}"
+				//if (level != null) {
+					if (colour == "warm") {
+						log.debug "warm colour now"
+						light.setHue(13.86)
+                        light.setSaturation(32.55)
+                        light.setLevel(100)
+                    }
+					else if (colour == "day") {
+						log.debug "day light now"
+                        light.setHue(20)
+                        light.setSaturation(2.01)
+                        light.setLevel(97)
 					}
-					else if ($color == "day") {
-						light.setColor([red:247, level:97.25490212440491, blue:243, saturation:2.016128908695496, hue:20, green:248, alpha:1])
+					else if (colour == "blue") {
+						log.debug "blue colour now"
+                        light.setHue(54.64)
+                        light.setSaturation(61.96)
+                        light.setLevel(100)
 					}
-					else if ($color == "blue") {
-						light.setColor([red:97, level:100, blue:255, saturation:61.96078360080719, hue:54.64134998772762, green:211, alpha:1])
+					else if (colour == "pink") {
+						log.debug "pink colour now"
+                        light.setHue(82.04)
+                        light.setSaturation(45.49)
+                        light.setLevel(100)
 					}
-					else if ($color == "pink") {
-						light.setColor([red:246, level:100, blue:255, saturation:45.49019336700439, hue:82.04022988505747, green:139, alpha:1])
+					else if (colour == "green") {
+						log.debug "green colour now"
+                        light.setHue(37.91)
+                        light.setSaturation(82.74)
+                        light.setLevel(100)
 					}
-					else if ($color == "green") {
-						light.setColor([red:44, level:100, blue:102, saturation:82.74509757757187, hue:37.91469199575948, green:255, alpha:1])
+					else (colour == "off") {
+						light.off
 					}
-					else ($color == "off") {
-						light.setLevel(0)
-					}
-				}
+				//}
 			}			
 			else {
 				log.error "Unknown type '$type'"
