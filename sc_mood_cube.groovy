@@ -107,6 +107,7 @@ def devicePage(params) {
 			}
 		}
 
+/*
 		section("Colors (hue/saturation)") {
 			lights.each {light ->
 				if (state.lightCapabilities[light.id] == "color") {
@@ -114,8 +115,9 @@ def devicePage(params) {
 				}
 			}
 		}
+*/
 		
-		section("Colors (off, pink, blue, green, day light, warm)") {
+		section("Colors (off, pink, blue, green, day, warm)") {
 			lights.each {light ->
 				if (state.lightCapabilities[light.id] == "color") {
 					input "color_${sceneId}_${light.id}", "text", title: light.displayName, description: "", required: false
@@ -201,10 +203,16 @@ private saveStates(params) {
 		if (type == "level") {
 			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
 		}
+		/*
 		else if (type == "color") {
 			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
 			updateSetting("color_${sceneId}_${light.id}", "${light.currentValue("hue")}/${light.currentValue("saturation")}")
 		}
+		*/
+		else if (type == "color") {
+			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
+			updateSetting("color_${sceneId}_${light.id}", "${light.currentValue("color")}")
+		}		
 	}
 }
 
@@ -234,6 +242,7 @@ private restoreStates(sceneId) {
 					light.setLevel(level)
 				}
 			}
+			/*
 			else if (type == "color") {
 				def segs = settings."color_${sceneId}_${light.id}"?.split("/")
 				if (segs?.size() == 2) {
@@ -254,6 +263,30 @@ private restoreStates(sceneId) {
 					}
 				}
 			}
+			*/
+			else if (type == "color") {
+				log.debug "${light.displayName} color is level: $level, color: $color"
+				if (level != null) {
+					if ($color == "warm") {
+						setColor [red:255, level:100, hex:#FFF1AC, blue:172, saturation:32.54901766777039, hue:13.85542168674699, green:241, alpha:1]
+					}
+					else if ($color == "day") {
+						setColor [red:247, level:97.25490212440491, hex:#F7F8F3, blue:243, saturation:2.016128908695496, hue:20, green:248, alpha:1]
+					}
+					else if ($color == "blue") {
+						setColor [red:97, level:100, hex:#61D3FF, blue:255, saturation:61.96078360080719, hue:54.64134998772762, green:211, alpha:1]
+					}
+					else if ($color == "pink") {
+						setColor [red:246, level:100, hex:#F68BFF, blue:255, saturation:45.49019336700439, hue:82.04022988505747, green:139, alpha:1]
+					}
+					else if ($color == "green") {
+						setColor [red:44, level:100, hex:#2CFF66, blue:102, saturation:82.74509757757187, hue:37.91469199575948, green:255, alpha:1]
+					}
+					else ($color == "off") {
+						light.setLevel(0)
+					}
+				}
+			}			
 			else {
 				log.error "Unknown type '$type'"
 			}
