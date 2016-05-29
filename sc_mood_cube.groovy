@@ -114,6 +114,15 @@ def devicePage(params) {
 				}
 			}
 		}
+		
+		section("Colors (off, pink, blue, green, day light, warm)") {
+			lights.each {light ->
+				if (state.lightCapabilities[light.id] == "color") {
+					input "color_${sceneId}_${light.id}", "text", title: light.displayName, description: "", required: false
+				}
+			}
+		}		
+		
 	}
 }
 
