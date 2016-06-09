@@ -12,8 +12,6 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  V1.0 - change the orginal cube app to accept color in English
- * 
  */
 
 /************
@@ -100,24 +98,6 @@ def devicePage(params) {
 				input "onoff_${sceneId}_${light.id}", "boolean", title: light.displayName
 			}
 		}
-/*
-		section("Dimmers") {
-			lights.each {light ->
-				if (state.lightCapabilities[light.id] in ["level", "color"]) {
-					input "level_${sceneId}_${light.id}", "enum", title: light.displayName, options: levels, description: "", required: false
-				}
-			}
-		}
-*/
-/*
-		section("Colors (hue/saturation)") {
-			lights.each {light ->
-				if (state.lightCapabilities[light.id] == "color") {
-					input "color_${sceneId}_${light.id}", "text", title: light.displayName, description: "", required: false
-				}
-			}
-		}
-*/
 		
 		section("Colors (off, pink, blue, green, day, warm)") {
 			lights.each {light ->
@@ -201,17 +181,6 @@ private saveStates(params) {
 		def type = state.lightCapabilities[light.id]
 
 		updateSetting("onoff_${sceneId}_${light.id}", light.currentValue("switch") == "on")
-        /*
-		if (type == "level") {
-			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
-		}
-        */
-		/*
-		else if (type == "color") {
-			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
-			updateSetting("color_${sceneId}_${light.id}", "${light.currentValue("hue")}/${light.currentValue("saturation")}")
-		}
-		*/
 		if (type == "color") {
 			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
 			updateSetting("color_${sceneId}_${light.id}", "${light.currentValue("color")}")
@@ -245,28 +214,6 @@ private restoreStates(sceneId) {
 					light.setLevel(level)
 				}
 			}
-			/*
-			else if (type == "color") {
-				def segs = settings."color_${sceneId}_${light.id}"?.split("/")
-				if (segs?.size() == 2) {
-					def hue = segs[0].toInteger()
-					def saturation = segs[1].toInteger()
-					log.debug "${light.displayName} color is level: $level, hue: $hue, sat: $saturation"
-					if (level != null) {
-						light.setColor(level: level, hue: hue, saturation: saturation)
-					}
-					else {
-						light.setColor(hue: hue, saturation: saturation)
-					}
-				}
-				else {
-					log.debug "${light.displayName} level is '$level'"
-					if (level != null) {
-						light.setLevel(level)
-					}
-				}
-			}
-			*/
 			else if (type == "color") {
 				//log.debug "${light.displayName} color is level: $level, color: " 
                 log.debug settings."color_${sceneId}_${light.id}"
