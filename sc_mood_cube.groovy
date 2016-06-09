@@ -12,6 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  v1.0 - change the orginal cube app to accept color in English
  */
 
 /************
@@ -21,7 +22,7 @@ definition(
 	name: "SC Mood Cube",
 	namespace: "soonchye",
 	author: "SoonChye",
-	description: "Set your lighting by rotating a cube containing a SmartSense Multi",
+	description: "Set your lighting by rotating a cube containing a Multipurpose Sensor",
 	category: "SmartThings Labs",
 	iconUrl: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-LightUpMyWorld.png",
 	iconX2Url: "https://s3.amazonaws.com/smartapp-icons/Convenience/App-LightUpMyWorld@2x.png"
@@ -46,7 +47,7 @@ preferences {
 	page(name: "scenesPage", title: "Scenes", install: true, uninstall: true)
 	page(name: "scenePage", title: "Scene", install: false, uninstall: false, previousPage: "scenesPage")
 	page(name: "devicePage", install: false, uninstall: false, previousPage: "scenePage")
-	page(name: "saveStatesPage", install: false, uninstall: false, previousPage: "scenePage")
+	//page(name: "saveStatesPage", install: false, uninstall: false, previousPage: "scenePage")
 }
 
 
@@ -79,9 +80,11 @@ def scenePage(params=[:]) {
 			href "devicePage", title: "Show Device States", params: [sceneId:sceneId], description: "", state: sceneIsDefined(sceneId) ? "complete" : "incomplete"
 		}
 
+/*
         section {
             href "saveStatesPage", title: "Record Current Device States", params: [sceneId:sceneId], description: ""
         }
+*/
 	}
 }
 
@@ -99,7 +102,7 @@ def devicePage(params) {
 			}
 		}
 		
-		section("Colors (off, pink, blue, green, day, warm)") {
+		section("Colors (Off, Pink, Blue, Deep Blue, Green, Day, Warm, Orange)") {
 			lights.each {light ->
 				if (state.lightCapabilities[light.id] == "color") {
 					input "color_${sceneId}_${light.id}", "text", title: light.displayName, description: "", required: false
@@ -109,12 +112,6 @@ def devicePage(params) {
 		
 	}
 }
-
-def saveStatesPage(params) {
-	saveStates(params)
-	devicePage(params)
-}
-
 
 /*************************
  * Installation & update *
@@ -172,23 +169,6 @@ private closestLevel(level) {
 	level ? "${Math.round(level/5) * 5}%" : "0%"
 }
 
-private saveStates(params) {
-	log.trace "saveStates($params)"
-	def sceneId = params.sceneId as Integer
-	getDeviceCapabilities()
-
-	lights.each {light ->
-		def type = state.lightCapabilities[light.id]
-
-		updateSetting("onoff_${sceneId}_${light.id}", light.currentValue("switch") == "on")
-		if (type == "color") {
-			updateSetting("level_${sceneId}_${light.id}", closestLevel(light.currentValue('level')))
-			updateSetting("color_${sceneId}_${light.id}", "${light.currentValue("color")}")
-		}		
-	}
-}
-
-
 private restoreStates(sceneId) {
 	log.trace "restoreStates($sceneId)"
 	getDeviceCapabilities()
@@ -217,9 +197,10 @@ private restoreStates(sceneId) {
 			else if (type == "color") {
 				//log.debug "${light.displayName} color is level: $level, color: " 
                 log.debug settings."color_${sceneId}_${light.id}"
-                def colour = settings."color_${sceneId}_${light.id}"  
+                def colour = settings."color_${sceneId}_${light.id}"
+                colour = colour.toLowerCase()
                 log.debug "Changing to colour: ${colour}"
-				//if (level != null) {
+                light.setLevel(0) //reset
 					if (colour == "warm") {
 						log.debug "warm colour now"
 						light.setHue(13.86)
@@ -250,10 +231,21 @@ private restoreStates(sceneId) {
                         light.setSaturation(82.74)
                         light.setLevel(100)
 					}
+					else if (colour == "orange") {
+						log.debug "orange colour now"
+                        light.setHue(8.048)
+                        light.setSaturation(91.764)
+                        light.setLevel(100)
+					}
+                    else if (colour == "deep blue") {
+						log.debug "deep blue colour now"
+                        light.setHue(66.528)
+                        light.setSaturation(94.509)
+                        light.setLevel(100)
+					}
 					else (colour == "off") {
 						light.off
 					}
-				//}
 			}			
 			else {
 				log.error "Unknown type '$type'"
