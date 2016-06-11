@@ -43,6 +43,9 @@ preferences {
 			label title: "Assign a name", required: false
 			mode title: "Set for specific mode(s)", required: false
 		}
+		section( "Enabled/Disabled" ) {
+        		input "enabled","bool", title: "Enabled?", required: true, defaultValue: true
+		}
 	}
 	page(name: "scenesPage", title: "Scenes", install: true, uninstall: true)
 	page(name: "scenePage", title: "Scene", install: false, uninstall: false, previousPage: "scenesPage")
@@ -79,12 +82,6 @@ def scenePage(params=[:]) {
 		section {
 			href "devicePage", title: "Show Device States", params: [sceneId:sceneId], description: "", state: sceneIsDefined(sceneId) ? "complete" : "incomplete"
 		}
-
-/*
-        section {
-            href "saveStatesPage", title: "Record Current Device States", params: [sceneId:sceneId], description: ""
-        }
-*/
 	}
 }
 
@@ -118,19 +115,24 @@ def devicePage(params) {
  *************************/
 def installed() {
 	log.debug "Installed with settings: ${settings}"
-
-	initialize()
+	if (settings.enabled == true) {
+		initialize()
+	}
 }
 
 def updated() {
 	log.debug "Updated with settings: ${settings}"
 
 	unsubscribe()
-	initialize()
+	if (settings.enabled == true) {
+		initialize()
+	}
 }
 
 def initialize() {
-	subscribe cube, "threeAxis", positionHandler
+	if (settings.enabled == true) {
+		subscribe cube, "threeAxis", positionHandler
+	}
 }
 
 
