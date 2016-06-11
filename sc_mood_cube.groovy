@@ -13,6 +13,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  v1.0 - change the orginal cube app to accept color in English
+ *  v1.1 - added enable/disable switch; fix a bug that caused the light to flicker
  */
 
 /************
@@ -143,6 +144,7 @@ def positionHandler(evt) {
 
 	def sceneId = getOrientation(evt.xyzValue)
 	log.trace "orientation: $sceneId"
+    log.trace "state.lastActiveSceneId: $state.lastActiveSceneId"
 
 	if (sceneId != state.lastActiveSceneId) {
 		restoreStates(sceneId)
@@ -150,7 +152,9 @@ def positionHandler(evt) {
 	else {
 		log.trace "No status change"
 	}
+    log.trace "set state.lastActiveSceneId = sceneId"
 	state.lastActiveSceneId = sceneId
+    log.trace "state.lastActiveSceneId: $state.lastActiveSceneId"
 }
 
 
@@ -202,7 +206,7 @@ private restoreStates(sceneId) {
                 def colour = settings."color_${sceneId}_${light.id}"
                 colour = colour.toLowerCase()
                 log.debug "Changing to colour: ${colour}"
-                light.setLevel(0) //reset
+                //light.setLevel(0) //reset
 					if (colour == "warm") {
 						log.debug "warm colour now"
 						light.setHue(13.86)
