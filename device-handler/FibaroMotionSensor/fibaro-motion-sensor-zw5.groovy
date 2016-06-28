@@ -12,6 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
+ *  V1.0 - [SC] This is is the version that work with Fibaro motion sensor FGMS-001
+ * 
  */
 metadata {
 	definition (name: "Fibaro Motion Sensor ZW5", namespace: "fibargroup", author: "Fibar Group S.A.") {
