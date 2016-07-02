@@ -29,7 +29,7 @@
  */
 
 metadata {
-    definition (name: "Fibaro Motion Sensor (CSC)", namespace: "SoonChye", author: "Soon Chye") {
+    definition (name: "Fibaro Motion Sensor (SC)", namespace: "SoonChye", author: "Soon Chye") {
 
         attribute   "needUpdate", "string"
 
@@ -42,6 +42,7 @@ metadata {
         capability  "Temperature Measurement"
 
         //fingerprint deviceId: "0x2001", inClusters: "0x30,0x84,0x85,0x80,0x8F,0x56,0x72,0x86,0x70,0x8E,0x31,0x9C,0xEF,0x30,0x31,0x9C"
+        //fingerprint copied from zw5
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x20, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x30, 0x9C, 0x98, 0x7A", outClusters: ""
     }
 
@@ -175,7 +176,9 @@ def parse(String description)
             result << response(configure())
         break
         default:
-            def cmd = zwave.parse(description, [0x72: 2, 0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x86: 1, 0x7A: 1, 0x56: 1])
+            //def cmd = zwave.parse(description, [0x72: 2, 0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x86: 1, 0x7A: 1, 0x56: 1])
+            //use the value from ZW5
+            def cmd = zwave.parse(description, [0x31: 5, 0x56: 1, 0x71: 3, 0x72: 2, 0x80: 1, 0x84: 2, 0x85: 2, 0x86: 1, 0x98: 1])
             if (cmd) {
                 result += zwaveEvent(cmd)
             }
@@ -186,12 +189,26 @@ def parse(String description)
     if ( result[0] != null ) { result }
 }
 
-/**
-* Handle and decode encapsulated cmds
-*/
+//security - copied from ZW5
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x71: 3, 0x84: 2, 0x85: 2, 0x86: 1, 0x98: 1])
+	if (encapsulatedCommand) {
+		return zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		createEvent(descriptionText: cmd.toString())
+	}
+}
+//security - copied from ZW5
+
+
+//Handle and decode encapsulated cmds - crc16
 def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 {
-    def versions = [0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2]
+    //def versions = [0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2]
+    //use the value from ZW5
+    def versions = [0x31: 5, 0x71: 3, 0x72: 2, 0x80: 1, 0x84: 2, 0x85: 2, 0x86: 1]
+    
     // def encapsulatedCommand = cmd.encapsulatedCommand(versions)
     def version = versions[cmd.commandClass as Integer]
     def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
