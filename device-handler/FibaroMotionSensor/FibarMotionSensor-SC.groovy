@@ -1,5 +1,5 @@
 /**
- *  Fibaro Motion Sensor ZW5
+ *  Fibaro Motion Sensor ZW5 + Cyril's code
  *
  *  Copyright 2016 Fibar Group S.A.
  *
@@ -12,7 +12,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  V1.0 - To combine the ZW5 version and Cyril version
+ *  V1.1 - To combine the ZW5 version and Cyril version, configure not working yet!
  * 
  */
 metadata {
@@ -45,43 +45,41 @@ metadata {
 		
     }
     
-    tiles(scale: 2) {
-    	multiAttributeTile(name:"FGMS", type:"lighting", width:6, height:4) {//with generic type secondary control text is not displayed in Android app
-        	tileAttribute("device.motion", key:"PRIMARY_CONTROL") {
-            	attributeState("inactive", icon:"st.motion.motion.inactive", backgroundColor:"#ffffff")
-            	attributeState("active", icon:"st.motion.motion.active", backgroundColor:"#53a7c0")   
-            }
-            
-            tileAttribute("device.tamper", key:"SECONDARY_CONTROL") {
-				attributeState("active", label:'tamper active', backgroundColor:"#53a7c0")
-				attributeState("inactive", label:'tamper inactive', backgroundColor:"#ffffff")
-			}  
+    tiles {
+        standardTile("motion", "device.motion", width: 2, height: 2) {
+            state "active", label:'motion', icon:"st.motion.motion.active", backgroundColor:"#53a7c0"
+            state "inactive", label:'no motion', icon:"st.motion.motion.inactive", backgroundColor:"#ffffff"
         }
-        
-        valueTile("temperature", "device.temperature", inactiveLabel: false, width: 2, height: 2) {
-			state "temperature", label:'${currentValue}°',
-			backgroundColors:[
-				[value: 31, color: "#153591"],
-				[value: 44, color: "#1e9cbb"],
-				[value: 59, color: "#90d2a7"],
-				[value: 74, color: "#44b621"],
-				[value: 84, color: "#f1d801"],
-				[value: 95, color: "#d04e00"],
-				[value: 96, color: "#bc2323"]
-			]
-		}
-        
-        valueTile("illuminance", "device.illuminance", inactiveLabel: false, width: 2, height: 2) {
-			state "luminosity", label:'${currentValue} ${unit}', unit:"lux"
-		}
-        
-        valueTile("battery", "device.battery", inactiveLabel: false, width: 2, height: 2, decoration: "flat") {
+        valueTile("temperature", "device.temperature", inactiveLabel: false) {
+            state "temperature", label:'${currentValue}°',
+            backgroundColors:
+            [
+                [value: 31, color: "#153591"],
+                [value: 44, color: "#1e9cbb"],
+                [value: 59, color: "#90d2a7"],
+                [value: 74, color: "#44b621"],
+                [value: 84, color: "#f1d801"],
+                [value: 95, color: "#d04e00"],
+                [value: 96, color: "#bc2323"]
+            ]
+        }
+        valueTile("illuminance", "device.illuminance", inactiveLabel: false) {
+            state "luminosity", label:'${currentValue} lux', unit:"lux"
+        }
+        valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
             state "battery", label:'${currentValue}% battery', unit:""
         }
-        
-        main "FGMS"
-        details(["FGMS","battery","temperature","illuminance"])
-    }
+        standardTile("acceleration", "device.tamper") {
+            state("active", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
+            state("inactive", label:'still', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
+        }
+        standardTile("configure", "device.needUpdate", inactiveLabel: false) {
+            state "NO" , label:'Synced', action:"configuration.configure", icon:"st.secondary.refresh-icon", backgroundColor:"#99CC33"
+            state "YES", label:'Pending', action:"configuration.configure", icon:"st.secondary.refresh-icon", backgroundColor:"#CCCC33"
+        }
+        main(["motion", "temperature", "illuminance", "acceleration"])
+        details(["motion", "temperature", "illuminance", "acceleration", "configure", "battery"])
+    } 
 }
 
 /**
@@ -280,7 +278,6 @@ def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLoca
 	log.info "${device.displayName}: received command: $cmd - device has reset itself"
 }
 
-/*
 //overwrite with the configure function from Cyril
 def configure() {
 	log.debug "Executing 'configure'"
@@ -298,11 +295,13 @@ def configure() {
     cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
     
     //customize by ROfu to disable vibration
-    cmds += zwave.configurationV2.configurationSet(parameterNumber: 20, size: 1, configurationValue: [0])
+    //cmds += zwave.configurationV2.configurationSet(parameterNumber: 20, size: 1, configurationValue: [1])
     
     encapSequence(cmds, 500)
+    
+    //call the cyril configure function
+    //configure_more()
 }
-*/
 
 private secure(physicalgraph.zwave.Command cmd) {
 	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
@@ -330,6 +329,40 @@ private encap(physicalgraph.zwave.Command cmd) {
 }
 
 /**************************************************************************************/
+
+/**
+* Triggered when Done button is pushed on Preference Pane
+*/
+def updated()
+{
+    // Only used to toggle the status if update is needed
+    update_needed_settings()
+    sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
+}
+
+/**
+* Update current cache properties
+*/
+def update_current_properties(cmd)
+{
+    def currentProperties = state.currentProperties ?: [:]
+
+    currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
+
+    if (settings."${cmd.parameterNumber}" != null)
+    {
+        if (settings."${cmd.parameterNumber}".toInteger() == cmd2Integer(cmd.configurationValue))
+        {
+            sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
+        }
+        else
+        {
+            sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
+        }
+    }
+
+    state.currentProperties = currentProperties
+}
 
 /**
 * Update needed settings
@@ -366,6 +399,8 @@ def update_needed_settings()
             cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger()).format()
         }
     }
+    //hard code update the temper alarm
+    cmds += zwave.configurationV2.configurationSet(parameterNumber: 20, size: 1, configurationValue: [0])
     sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
 
     return cmds
@@ -397,7 +432,7 @@ def sync_properties()
 * Configures the device to settings needed by SmarthThings at device discovery time.
 * Need a triple click on B-button to zwave commands to pass
 */
-def configure() {
+def configure_more() {
     log.debug "Configuring Device For SmartThings Use"
     def cmds = []
 
