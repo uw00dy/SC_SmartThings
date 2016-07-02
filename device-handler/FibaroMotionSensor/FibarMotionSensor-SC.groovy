@@ -17,6 +17,9 @@
  */
 metadata {
 	definition (name: "Fibaro Motion Sensor (SC)", namespace: "soonchye", author: "Soon Chye") {
+		
+		attribute   "needUpdate", "string"
+		
 		capability "Battery"
 		capability "Configuration"
 		capability "Illuminance Measurement"
@@ -27,6 +30,16 @@ metadata {
         
         fingerprint deviceId: "0x0701", inClusters: "0x5E, 0x20, 0x86, 0x72, 0x5A, 0x59, 0x85, 0x73, 0x84, 0x80, 0x71, 0x56, 0x70, 0x31, 0x8E, 0x22, 0x30, 0x9C, 0x98, 0x7A", outClusters: ""
 	}
+	
+	preferences {
+        	input description: "Once you change values on this page, the `Synced` Status will become `pending` status.\
+                            You can then force the sync by triple click the b-button on the device or wait for the\
+                            next WakeUp (every 2 hours).",
+
+		displayDuringSetup: false, type: "paragraph", element: "paragraph"
+
+	generate_preferences(configuration_model())
+    	}
     
 	simulator {
 		
@@ -68,6 +81,34 @@ metadata {
         
         main "FGMS"
         details(["FGMS","battery","temperature","illuminance"])
+    }
+}
+
+/**
+* This function generate the preferences menu from the XML file
+* each input will be accessible from settings map object.
+*/
+def generate_preferences(configuration_model)
+{
+    def configuration = parseXml(configuration_model)
+    configuration.Value.each
+    {
+        switch(it.@type)
+        {
+            case ["byte","short"]:
+                input "${it.@index}", "number",
+                    title:"${it.@index} - ${it.@label}\n" + "${it.Help}",
+                    defaultValue: "${it.@value}"
+            break
+            case "list":
+                def items = []
+                it.Item.each { items << ["${it.@value}":"${it.@label}"] }
+                input "${it.@index}", "enum",
+                    title:"${it.@index} - ${it.@label}\n" + "${it.Help}",
+                    defaultValue: "${it.@value}",
+                    options: items
+            break
+        }
     }
 }
 
@@ -255,6 +296,9 @@ def configure() {
     cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
     cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
     cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
+    
+    //customize by ROfu to disable vibration
+    cmds += zwave.configurationV2.configurationSet(parameterNumber: 20, size: 1, configurationValue: [0])
     
     encapSequence(cmds, 500)
 }
