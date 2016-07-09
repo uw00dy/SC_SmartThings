@@ -1,13 +1,13 @@
 /**
  *  Device Type Definition File
  *
- *  Device Type:        Fibaro Motion Sensor
- *  File Name:          FibarMotionSensor.groovy
- *  Initial Release:    2015-06-23
- *  Author:             Cyril Peponnet
- *  Email:              cyril@peponnet.fr
+ *  Device Type:		Fibaro Motion Sensor v3.2
+ *  File Name:			fibarMotion.groovy
+ *  Initial Release:	2014-12-10
+ *  Author:				Soon Chye
+ *  Credit:        		SmartThings, Fibar Group S.A., Cyril Peponnet
  *
- *  Copyright 2015 Cyril Peponnet
+ *  Copyright 2016 Soon Chye
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -17,70 +17,70 @@
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
- *  
- *  Ver1.0 - Seems like not working with the latest Fibaro Motion Sensor (FGMS-001)
- ***************************************************************************************
-*/
-
-/**
- * Sets up metadata, preferences simulator info and tile definition.
  *
+ *  Ver1.0 - SmartThing Fibaro ZW5 + Cyril
+ *  Note: The configure1 method is working now
+ *  Cyril's original code: https://community.smartthings.com/t/beta-fibaro-motion-sensor-new-device-handler-with-all-settings-and-auto-sync-feature/18779
+ *  SmartThings original code: https://github.com/SmartThingsCommunity/SmartThingsPublic/blob/master/devicetypes/fibargroup/fibaro-motion-sensor-zw5.src/fibaro-motion-sensor-zw5.groovy
  */
 
+ /**
+ * Sets up metadata, simulator info and tile definition.
+ */
 metadata {
-    definition (name: "Fibaro Motion Sensor (Cyril)", namespace: "CyrilPeponnet", author: "Cyril Peponnet") {
+	definition (name: "Fibaro Motion Sensor (SC)", namespace: "soonchye", author: "Soon Chye") {
+		
+		attribute   "needUpdate", "string"
+		
+		capability "Battery"
+		capability "Configuration"
+		capability "Illuminance Measurement"
+		capability "Motion Sensor"
+		capability "Sensor"
+		capability "Tamper Alert"
+		capability "Temperature Measurement"
+        
+        command		"resetParams2StDefaults"
+        command		"listCurrentParams"
+        command		"updateZwaveParam"
+        command		"configure"
+        
+        fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x86, 0x72, 0x59, 0x80, 0x73, 0x56, 0x22, 0x31, 0x98, 0x7A", outClusters: ""
+        
+        preferences {
+                input description: "Once you change values on this page, the `Synced` Status will become `pending` status.\
+                                You can then force the sync by triple click the b-button on the device or wait for the\
+                                next WakeUp (every 2 hours).",
 
-        attribute   "needUpdate", "string"
-
-        capability  "Acceleration Sensor"
-        capability  "Battery"
-        capability  "Configuration"
-        capability  "Illuminance Measurement"
-        capability  "Motion Sensor"
-        capability  "Sensor"
-        capability  "Temperature Measurement"
-
-        fingerprint deviceId: "0x2001", inClusters: "0x30,0x84,0x85,0x80,0x8F,0x56,0x72,0x86,0x70,0x8E,0x31,0x9C,0xEF,0x30,0x31,0x9C"
-    }
-
-    preferences {
-        input description: "Once you change values on this page, the `Synced` Status will become `pending` status.\
-                            You can then force the sync by triple click the b-button on the device or wait for the\
-                            next WakeUp (every 2 hours).",
-
-              displayDuringSetup: false, type: "paragraph", element: "paragraph"
+            displayDuringSetup: false, type: "paragraph", element: "paragraph"
 
         generate_preferences(configuration_model())
-    }
+            }
+        
+	}
 
-    simulator {
+	simulator {
+		// messages the device returns in response to commands it receives
+		status "motion (basic)"     : "command: 2001, payload: FF"
+		status "no motion (basic)"  : "command: 2001, payload: 00"
+		status "motion (binary)"    : "command: 3003, payload: FF"
+		status "no motion (binary)" : "command: 3003, payload: 00"
 
-        status "motion (basic)"     : zwave.basicV1.basicSet(value:0xFF).incomingMessage()
-        status "no motion (basic)"  : zwave.basicV1.basicSet(value:0).incomingMessage()
-        status "motion (binary)"    : zwave.sensorBinaryV2.sensorBinaryReport(sensorType:12, sensorValue:0xFF).incomingMessage()
-        status "no motion (binary)" : zwave.sensorBinaryV2.sensorBinaryReport(sensorType:12, sensorValue:0).incomingMessage()
-        status "wake up"            : "command: 8407, payload: "
+		for (int i = 0; i <= 100; i += 20) {
+			status "temperature ${i}F": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
+				scaledSensorValue: i, precision: 1, sensorType: 1, scale: 1).incomingMessage()
+		}
 
-        for (int i = 0; i <= 100; i += 20) {
-            status "Vibration ${i}%": zwave.sensorAlarmV1.sensorAlarmReport(
-                seconds: 30, sensorType: 0x00 /*general purpose */, sensorState:i, sourceNodeId: 2).incomingMessage()
-        }
+		for (int i = 200; i <= 1000; i += 200) {
+			status "luminance ${i} lux": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
+				scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
+		}
 
-        for (int i = 0; i <= 100; i += 20) {
-            status "temperature ${i}F": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-                scaledSensorValue: i, precision: 1, sensorType: 1, scale: 1).incomingMessage()
-        }
-
-        for (int i = 200; i <= 1000; i += 200) {
-            status "luminance ${i} lux": new physicalgraph.zwave.Zwave().sensorMultilevelV2.sensorMultilevelReport(
-                scaledSensorValue: i, precision: 0, sensorType: 3).incomingMessage()
-        }
-
-        for (int i = 0; i <= 100; i += 20) {
-            status "battery ${i}%": new physicalgraph.zwave.Zwave().batteryV1.batteryReport(
-                batteryLevel: i).incomingMessage()
-        }
-    }
+		for (int i = 0; i <= 100; i += 20) {
+			status "battery ${i}%": new physicalgraph.zwave.Zwave().batteryV1.batteryReport(
+				batteryLevel: i).incomingMessage()
+		}
+	}
 
     tiles {
         standardTile("motion", "device.motion", width: 2, height: 2) {
@@ -106,20 +106,395 @@ metadata {
         valueTile("battery", "device.battery", inactiveLabel: false, decoration: "flat") {
             state "battery", label:'${currentValue}% battery', unit:""
         }
-        standardTile("acceleration", "device.acceleration") {
-            state("vibration", label:'${currentValue}', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
-            state("still", label:'${currentValue}', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
-            state("moving", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
+        standardTile("acceleration", "device.tamper") {
             state("active", label:'vibration', icon:"st.motion.acceleration.active", backgroundColor:"#53a7c0")
             state("inactive", label:'still', icon:"st.motion.acceleration.inactive", backgroundColor:"#ffffff")
         }
+        
         standardTile("configure", "device.needUpdate", inactiveLabel: false) {
             state "NO" , label:'Synced', action:"configuration.configure", icon:"st.secondary.refresh-icon", backgroundColor:"#99CC33"
             state "YES", label:'Pending', action:"configuration.configure", icon:"st.secondary.refresh-icon", backgroundColor:"#CCCC33"
         }
-        main(["motion", "temperature", "illuminance", "acceleration"])
-        details(["motion", "temperature", "illuminance", "acceleration", "configure", "battery"])
+		main(["motion", "temperature", "illuminance", "acceleration"])
+        details(["motion", "temperature", "illuminance", "acceleration", "configure", "battery", "listCurrentParams"])
+    } 
+}
+
+private encapSequence(commands, delay=200) {
+	delayBetween(commands.collect{ encap(it) }, delay)
+}
+
+private encap(physicalgraph.zwave.Command cmd) {
+	def secureClasses = [0x20, 0x30, 0x5A, 0x70, 0x71, 0x84, 0x85, 0x8E, 0x9C]
+
+	//todo: check if secure inclusion was successful
+    //if not do not send security-encapsulated command
+	if (secureClasses.find{ it == cmd.commandClassId }) {
+    	secure(cmd)
+    } else {
+    	crc16(cmd)
     }
+}
+
+private secure(physicalgraph.zwave.Command cmd) {
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crc16(physicalgraph.zwave.Command cmd) {
+	//zwave.crc16encapV1.crc16Encap().encapsulate(cmd).format()
+    "5601${cmd.format()}0000"
+}
+
+/**
+* Configures the device to settings needed by SmarthThings at device discovery time.
+* Need a triple click on B-button to zwave commands to pass
+* This configure is for Cyril related code
+*/
+def configure() {
+	log.debug "Executing 'configure'"
+    
+    def cmds = []
+    
+    cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 7200, nodeid: zwaveHubNodeId)//FGMS' default wake up interval
+    cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+    cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
+    cmds += zwave.versionV1.versionGet()
+    cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+    cmds += zwave.batteryV1.batteryGet()
+    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
+    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
+    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
+    
+    //80. Visual LED indicator. 4 - red, 5 - green, 6 - blue, 7 - yellow... Tested Ok
+    //cmds += zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [7])
+    
+    cmds += update_needed_settings()
+    
+    encapSequence(cmds, 500)
+
+}
+
+
+/**
+* SC: This configure is working sample, change change the configure1 to configure & rename the existing, it will work
+*/
+def configure2() {
+	log.debug "Executing 'configure'"
+    
+    def cmds = []
+    
+    cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 7200, nodeid: zwaveHubNodeId)//FGMS' default wake up interval
+    cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+    cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
+    cmds += zwave.versionV1.versionGet()
+    cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+    cmds += zwave.batteryV1.batteryGet()
+    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
+    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
+    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
+    
+    //20. Tamper - sensitivity. 0 = inactive. Range from 1-121, default = 20. Tested Ok
+    cmds += zwave.configurationV1.configurationSet(parameterNumber: 20, size: 1, configurationValue: [0])
+    
+    //80. Visual LED indicator. 4 - red, 5 - green, 6 - blue, 7 - yellow... Tested Ok
+    cmds += zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [5])
+    
+    encapSequence(cmds, 500)
+}
+
+
+/* This parse work with CSC version
+// parse events into attributes
+def parse(String description) {
+	log.debug "Parsing '${description}'"        
+    def result = []
+    
+    if (description.startsWith("Err 106")) {
+		if (state.sec) {
+			result = createEvent(descriptionText:description, displayed:false)
+		} else {
+			result = createEvent(
+				descriptionText: "FGK failed to complete the network security key exchange. If you are unable to receive data from it, you must remove it from your network and add it again.",
+				eventType: "ALERT",
+				name: "secureInclusion",
+				value: "failed",
+				displayed: true,
+			)
+		}
+	} else if (description == "updated") {
+		return null
+	} else {
+    	def cmd = zwave.parse(description, [0x31: 5, 0x56: 1, 0x71: 3, 0x72: 2, 0x80: 1, 0x84: 2, 0x85: 2, 0x86: 1, 0x98: 1])
+    
+    	if (cmd) {
+    		log.debug "Parsed '${cmd}'"
+        	zwaveEvent(cmd)
+    	}
+    }
+}
+*/
+
+/**
+* Parse incoming device messages to generate events
+*/
+def parse(String description)
+{
+    //log.debug "==> Zwave Event: ${description}, Battery: ${state.lastBatteryReport}"
+
+    def result = []
+
+    switch(description) {
+        case ~/Err.*/:
+            log.error "Error: $description"
+        break
+        // updated is hit when the device is paired.
+        case "updated":
+        	log.info "SC: updated"
+            result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 7200, nodeid:zwaveHubNodeId).format())
+            result << response(zwave.batteryV1.batteryGet().format())
+            result << response(zwave.versionV1.versionGet().format())
+            result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
+            result << response(zwave.firmwareUpdateMdV2.firmwareMdGet().format())
+            result << response(configure())
+        break
+        default:
+    		def cmd = zwave.parse(description, [0x31: 5, 0x56: 1, 0x71: 3, 0x72: 2, 0x80: 1, 0x84: 2, 0x85: 2, 0x86: 1, 0x98: 1])
+            if (cmd) {
+                result += zwaveEvent(cmd)
+            }
+        break
+    }
+
+    //log.debug "=== Parsed '${description}' to ${result.inspect()}"
+    if ( result[0] != null ) { result }
+}
+
+//security
+def zwaveEvent(physicalgraph.zwave.commands.securityv1.SecurityMessageEncapsulation cmd) {
+	def encapsulatedCommand = cmd.encapsulatedCommand([0x71: 3, 0x84: 2, 0x85: 2, 0x86: 1, 0x98: 1])
+	if (encapsulatedCommand) {
+		return zwaveEvent(encapsulatedCommand)
+	} else {
+		log.warn "Unable to extract encapsulated cmd from $cmd"
+		createEvent(descriptionText: cmd.toString())
+	}
+}
+
+//crc16
+def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
+{
+    def versions = [0x31: 5, 0x71: 3, 0x72: 2, 0x80: 1, 0x84: 2, 0x85: 2, 0x86: 1]
+	def version = versions[cmd.commandClass as Integer]
+	def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
+	def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
+	if (!encapsulatedCommand) {
+		log.debug "Could not extract command from $cmd"
+	} else {
+		zwaveEvent(encapsulatedCommand)
+	}
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
+	def map = [ displayed: true ]
+    switch (cmd.sensorType) {
+    	case 1:
+        	map.name = "temperature"
+            map.unit = cmd.scale == 1 ? "F" : "C"
+            map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, map.unit, cmd.precision)
+            break
+    	case 3:
+        	map.name = "illuminance"
+            map.value = cmd.scaledSensorValue.toInteger().toString()
+            map.unit = "lux"
+            break
+    }
+
+	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.notificationv3.NotificationReport cmd) {
+	def map = [:]
+    if (cmd.notificationType == 7) {
+    	switch (cmd.event) {
+        	case 0:
+            	if (cmd.eventParameter[0] == 3) {
+            		map.name = "tamper"
+                    map.value = "inactive"
+                    map.descriptionText = "${device.displayName}: tamper alarm has been deactivated"
+            	}
+            	if (cmd.eventParameter[0] == 8) {
+                	map.name = "motion"
+                    map.value = "inactive"
+                    map.descriptionText = "${device.displayName}: motion has stopped"
+                }
+        		break
+                
+        	case 3:
+            	map.name = "tamper"
+                map.value = "active"
+                map.descriptionText = "${device.displayName}: tamper alarm activated"
+            	break
+                
+            case 8:
+                map.name = "motion"
+                map.value = "active"
+                map.descriptionText = "${device.displayName}: motion detected"
+                break
+        }
+    }
+    
+    createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
+	def map = [:]
+	map.name = "battery"
+	map.value = cmd.batteryLevel == 255 ? 1 : cmd.batteryLevel.toString()
+	map.unit = "%"
+	map.displayed = true
+	createEvent(map)
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.wakeupv2.WakeUpNotification cmd)
+{
+	def event = createEvent(descriptionText: "${device.displayName} woke up", displayed: false)
+    def cmds = []
+    cmds += encap(zwave.batteryV1.batteryGet())
+    cmds += "delay 500"
+    cmds += encap(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0))
+    cmds += "delay 500"
+    cmds += encap(zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1))     
+    cmds += "delay 1200"
+    cmds += encap(zwave.wakeUpV1.wakeUpNoMoreInformation())
+    [event, response(cmds)]   
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) { 
+	log.debug "manufacturerId:   ${cmd.manufacturerId}"
+    log.debug "manufacturerName: ${cmd.manufacturerName}"
+    log.debug "productId:        ${cmd.productId}"
+    log.debug "productTypeId:    ${cmd.productTypeId}"
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.DeviceSpecificReport cmd) { 
+	log.debug "deviceIdData:                ${cmd.deviceIdData}"
+    log.debug "deviceIdDataFormat:          ${cmd.deviceIdDataFormat}"
+    log.debug "deviceIdDataLengthIndicator: ${cmd.deviceIdDataLengthIndicator}"
+    log.debug "deviceIdType:                ${cmd.deviceIdType}"
+    
+    if (cmd.deviceIdType == 1 && cmd.deviceIdDataFormat == 1) {//serial number in binary format
+		String serialNumber = "h'"
+        
+        cmd.deviceIdData.each{ data ->
+        	serialNumber += "${String.format("%02X", data)}"
+        }
+        
+        updateDataValue("serialNumber", serialNumber)
+        log.debug "${device.displayName} - serial number: ${serialNumber}"
+    }
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd) {	
+    updateDataValue("version", "${cmd.applicationVersion}.${cmd.applicationSubVersion}")
+    log.debug "applicationVersion:      ${cmd.applicationVersion}"
+    log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
+    log.debug "zWaveLibraryType:        ${cmd.zWaveLibraryType}"
+    log.debug "zWaveProtocolVersion:    ${cmd.zWaveProtocolVersion}"
+    log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
+}
+
+def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLocallyNotification cmd) {
+	log.info "${device.displayName}: received command: $cmd - device has reset itself"
+}
+
+ /**
+ * Sets all of available Fibaro parameters back to the device defaults except for what
+ * SmartThings needs to support the stock functionality as released.
+ *
+ * based on the post below, only parameter 1 - 3 are using configurationV2
+ * https://community.smartthings.com/t/deprecated-fibaro-motion-detector-v3-2-alpha-release/41106/109
+ */
+def resetParams2StDefaults() {
+	log.debug "Resetting Sensor Parameters to SmartThings Compatible Defaults"
+	def cmds = []
+	// Sensitivity 8-255 default 10 (lower value more sensitive)
+	cmds += zwave.configurationV2.configurationSet(configurationValue: [10], parameterNumber: 1, size: 1).format()
+	// Blind Time 0-15 default 15 (8 seconds) seconds = .5 * (setting + 1)
+	// Longer Blind = Longer Battery Life
+    cmds += zwave.configurationV2.configurationSet(configurationValue: [15], parameterNumber: 2, size: 1).format()
+    cmds += zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 3, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [2], parameterNumber: 4, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0,30], parameterNumber: 6, size: 2).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 8, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0,200], parameterNumber: 9, size: 2).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 12, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 16, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [15], parameterNumber: 20, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0,30], parameterNumber: 22, size: 2).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 24, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 26, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0,200], parameterNumber: 40, size: 2).format()
+    // Illum Report Interval 0=none, 1-5 may cause temp report fail, low values waste battery
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 42, size: 2).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [3,132], parameterNumber: 62, size: 2).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 64, size: 2).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0,0], parameterNumber: 66, size: 2).format()
+    // Led Signal Mode Default Default 10  0=Inactive
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [10], parameterNumber: 80, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [50], parameterNumber: 81, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [0,100], parameterNumber: 82, size: 2).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [3,232], parameterNumber: 83, size: 2).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [18], parameterNumber: 86, size: 1).format()
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [28], parameterNumber: 87, size: 1).format()
+    // Tamper LED Flashing (White/REd/Blue) 0=Off 1=On	
+    cmds += zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 89, size: 1).format()
+    
+    encapSequence(cmds, 1500)
+}
+
+/**************************************Cyril************************************************/
+
+/**
+* Update needed settings
+*/
+def update_needed_settings()
+{
+	log.debug "Execute: update_needed_settings"
+    def cmds = []
+    def currentProperties = state.currentProperties ?: [:]
+    def configuration = parseXml(configuration_model())
+    def isUpdateNeeded = "NO"
+    configuration.Value.each
+    {
+    	//log.debug "current index: ${it.@index}"
+		//log.debug "current settings: " + settings."${it.@index}"
+
+        //should check which value change, only update those
+        if (settings."${it.@index}" != null)
+        {
+            log.debug "Parameter ${it.@index} will be updated to " + settings."${it.@index}"
+            isUpdateNeeded = "YES"
+            switch(it.@type)
+            {
+                case ["byte", "list"]:
+                    cmds += zwave.configurationV1.configurationSet(configurationValue: [(settings."${it.@index}").toInteger()], parameterNumber: it.@index.toInteger(), size: 1)
+                break
+                case "short":
+                    def short valueLow   = settings."${it.@index}" & 0xFF
+                    def short valueHigh = (settings."${it.@index}" >> 8) & 0xFF
+                    def value = [valueHigh, valueLow]
+                    cmds += zwave.configurationV1.configurationSet(configurationValue: value, parameterNumber: it.@index.toInteger(), size: 2)
+                break
+            }
+        }
+    }
+    
+    //enable the log to view the parameter list
+    log.info cmds    
+    sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
+
+    return cmds
 }
 
 /**
@@ -128,6 +503,7 @@ metadata {
 */
 def generate_preferences(configuration_model)
 {
+	//log.debug "Execute: generate_preferences"
     def configuration = parseXml(configuration_model)
     configuration.Value.each
     {
@@ -150,334 +526,7 @@ def generate_preferences(configuration_model)
     }
 }
 
-/**
-* Parse incoming device messages to generate events
-*/
-def parse(String description)
-{
-    log.debug "==> New Zwave Event: ${description}, Battery: ${state.lastBatteryReport}"
 
-    def result = []
-
-    switch(description) {
-        case ~/Err.*/:
-            log.error "Error: $description"
-        break
-        // updated is hit when the device is paired.
-        case "updated":
-            result << response(zwave.wakeUpV1.wakeUpIntervalSet(seconds: 7200, nodeid:zwaveHubNodeId).format())
-            result << response(zwave.batteryV1.batteryGet().format())
-            result << response(zwave.versionV1.versionGet().format())
-            result << response(zwave.manufacturerSpecificV2.manufacturerSpecificGet().format())
-            result << response(zwave.firmwareUpdateMdV2.firmwareMdGet().format())
-            result << response(configure())
-        break
-        default:
-            def cmd = zwave.parse(description, [0x72: 2, 0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2, 0x80: 1, 0x86: 1, 0x7A: 1, 0x56: 1])
-            if (cmd) {
-                result += zwaveEvent(cmd)
-            }
-        break
-    }
-
-    log.debug "=== Parsed '${description}' to ${result.inspect()}"
-    if ( result[0] != null ) { result }
-}
-
-/**
-* Handle and decode encapsulated cmds
-*/
-def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
-{
-    def versions = [0x31: 2, 0x30: 1, 0x84: 1, 0x9C: 1, 0x70: 2]
-    // def encapsulatedCommand = cmd.encapsulatedCommand(versions)
-    def version = versions[cmd.commandClass as Integer]
-    def ccObj = version ? zwave.commandClass(cmd.commandClass, version) : zwave.commandClass(cmd.commandClass)
-    def encapsulatedCommand = ccObj?.command(cmd.command)?.parse(cmd.data)
-    if (!encapsulatedCommand) {
-        log.debug "Could not extract command from $cmd"
-    } else {
-        //log.debug "Encapsulated Command $cmd -> $encapsulatedCommand"
-        zwaveEvent(encapsulatedCommand)
-    }
-}
-
-/**
-* Sensors Events
-*/
-def motionValueEvent(Short value, String message)
-{
-    def description = value ? "$device.displayName detected $message " : "$device.displayName $message has stopped"
-    def returnValue = value ? "active" : "inactive"
-    createEvent([name: "motion", value: returnValue, descriptionText: description ])
-}
-
-/**
-* Zwave events overload
-*/
-def zwaveEvent(physicalgraph.zwave.commands.sensoralarmv1.SensorAlarmReport cmd)
-{
-    log.debug "%%%% Sensor Alarm Report"
-    def returnValue = ""
-    def message = ""
-    switch(cmd.sensorState) {
-        case 0:
-            returnValue = "still"
-            message     = "$device.displayName is now still"
-        break
-        case 255:
-            returnValue = "moving"
-            message     = "$device.displayName is moving"
-        break
-        default:
-            returnValue = cmd.sensorState
-            message     = "$device.displayName detected some vibrations"
-        break
-    }
-    createEvent([ name: "acceleration", value: returnValue , descriptionText: message ])
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensorbinaryv1.SensorBinaryReport cmd) {
-    log.debug "%%%% Sensor Binary Report"
-    motionValueEvent(cmd.sensorValue, "motion")
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.basicv1.BasicSet cmd)
-{
-    log.debug "%%%% Basic Set Cmd"
-    motionValueEvent(cmd.value, "motion")
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv2.SensorMultilevelReport cmd)
-{
-    log.debug "%%%% Multi Sensor Report"
-    def map = [ displayed: true ]
-    switch (cmd.sensorType) {
-        case 1:
-            map.name = "temperature"
-            def cmdScale = cmd.scale == 1 ? "F" : "C"
-			map.value = Math.round(convertTemperatureIfNeeded(cmd.scaledSensorValue, cmdScale,  cmd.precision).toFloat()).toString()
-			map.unit  = getTemperatureScale()
-            break;
-        case 3:
-            map.name = "illuminance"
-            map.value = cmd.scaledSensorValue.toInteger().toString()
-            map.unit = "lux"
-            break;
-    }
-    createEvent(map)
-}
-
-def zwaveEvent(physicalgraph.zwave.commands.batteryv1.BatteryReport cmd) {
-    def map = [ name: "battery", unit: "%" ]
-    if (cmd.batteryLevel == 0xFF)
-    {
-        map.value = 1
-        map.descriptionText = "${device.displayName} battery is low"
-        map.isStateChange = true
-    }
-    else
-    {
-        map.value = cmd.batteryLevel
-    }
-    state.lastBatteryReport = now()
-    createEvent(map)
-}
-
-/**
-* This is called each time your device will wake up.
-*/
-def zwaveEvent(physicalgraph.zwave.commands.wakeupv1.WakeUpNotification cmd)
-{
-    log.debug "%%%% Device ${device.displayName} woke up"
-    def commands = sync_properties()
-    sendEvent(descriptionText: "${device.displayName} woke up", isStateChange: false)
-    // check if we need to request battery level (every 48h)
-    if (!state.lastBatteryReport || (now() - state.lastBatteryReport)/60000 >= 60 * 48)
-    {
-        commands << zwave.batteryV1.batteryGet().format()
-    }
-    // Adding No More infomration needed at the end
-    commands << zwave.wakeUpV1.wakeUpNoMoreInformation().format()
-    response(delayBetween(commands, 1500))
-}
-
-
-/**
-* This will be called each time we update a paramter. Use it to fill our currents parameters as a callback
-*/
-def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
-    update_current_properties(cmd)
-    log.debug "${device.displayName} parameter '${cmd.parameterNumber}' with a byte size of '${cmd.size}' is set to '${cmd.configurationValue}'"
-}
-
-/**
-* This is called the first time upon association,
-*/
-
-def zwaveEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd) {
-
-    def msr = String.format("%04X-%04X-%04X", cmd.manufacturerId, cmd.productTypeId, cmd.productId)
-    def result = []
-
-    log.debug "msr: $msr"
-    updateDataValue("MSR", msr)
-    result << createEvent(descriptionText: "$device.displayName MSR: $msr", isStateChange: false)
-
-    if ( msr == "010F-0800-2001" )
-    {
-        log.debug "Dealing with a Fibaro Motion Sensor."
-        result << response(configure())
-    }
-
-    result
-}
-
-def zwaveEvent(physicalgraph.zwave.Command cmd) {
-    log.debug "Catchall reached for cmd: ${cmd.toString()}}"
-    createEvent(displayed: false, descriptionText: "$device.displayName: $cmd")
-}
-
-/**
-* Only for information purpose upon association
-*/
-def createEvent(physicalgraph.zwave.commands.manufacturerspecificv2.ManufacturerSpecificReport cmd, Map item1) {
-    log.debug "manufacturerId:   ${cmd.manufacturerId}"
-    log.debug "manufacturerName: ${cmd.manufacturerName}"
-    log.debug "productId:        ${cmd.productId}"
-    log.debug "productTypeId:    ${cmd.productTypeId}"
-}
-
-def createEvent(physicalgraph.zwave.commands.versionv1.VersionReport cmd, Map item1) {
-    updateDataValue("applicationVersion", "${cmd.applicationVersion}")
-    log.debug "applicationVersion:      ${cmd.applicationVersion}"
-    log.debug "applicationSubVersion:   ${cmd.applicationSubVersion}"
-    log.debug "zWaveLibraryType:        ${cmd.zWaveLibraryType}"
-    log.debug "zWaveProtocolVersion:    ${cmd.zWaveProtocolVersion}"
-    log.debug "zWaveProtocolSubVersion: ${cmd.zWaveProtocolSubVersion}"
-}
-
-def createEvent(physicalgraph.zwave.commands.firmwareupdatemdv1.FirmwareMdReport cmd, Map item1) {
-    log.debug "checksum:       ${cmd.checksum}"
-    log.debug "firmwareId:     ${cmd.firmwareId}"
-    log.debug "manufacturerId: ${cmd.manufacturerId}"
-}
-
-/**
-* Triggered when Done button is pushed on Preference Pane
-*/
-def updated()
-{
-    // Only used to toggle the status if update is needed
-    update_needed_settings()
-    sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
-}
-
-/**
-* Update current cache properties
-*/
-def update_current_properties(cmd)
-{
-    def currentProperties = state.currentProperties ?: [:]
-
-    currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
-
-    if (settings."${cmd.parameterNumber}" != null)
-    {
-        if (settings."${cmd.parameterNumber}".toInteger() == cmd2Integer(cmd.configurationValue))
-        {
-            sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
-        }
-        else
-        {
-            sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
-        }
-    }
-
-    state.currentProperties = currentProperties
-}
-
-/**
-* Update needed settings
-*/
-def update_needed_settings()
-{
-    def cmds = []
-    def currentProperties = state.currentProperties ?: [:]
-    def configuration = parseXml(configuration_model())
-    def isUpdateNeeded = "NO"
-    configuration.Value.each
-    {
-        if (currentProperties."${it.@index}" == null)
-        {
-            log.debug "Current value of parameter ${it.@index} is unknown"
-            isUpdateNeeded = "YES"
-        }
-        else if (settings."${it.@index}" != null && cmd2Integer(currentProperties."${it.@index}") != settings."${it.@index}".toInteger())
-        {
-            log.debug "Parameter ${it.@index} will be updated to " + settings."${it.@index}"
-            isUpdateNeeded = "YES"
-            switch(it.@type)
-            {
-                case ["byte", "list"]:
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: [(settings."${it.@index}").toInteger()], parameterNumber: it.@index.toInteger(), size: 1).format()
-                break
-                case "short":
-                    def short valueLow   = settings."${it.@index}" & 0xFF
-                    def short valueHigh = (settings."${it.@index}" >> 8) & 0xFF
-                    def value = [valueHigh, valueLow]
-                    cmds << zwave.configurationV1.configurationSet(configurationValue: value, parameterNumber: it.@index.toInteger(), size: 2).format()
-                break
-            }
-            cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger()).format()
-        }
-    }
-    sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
-
-    return cmds
-}
-
-/**
-* Try to sync properties with the device
-*/
-def sync_properties()
-{
-    def currentProperties = state.currentProperties ?: [:]
-    def configuration = parseXml(configuration_model())
-
-    def cmds = []
-    configuration.Value.each
-    {
-        if (! currentProperties."${it.@index}" || currentProperties."${it.@index}" == null)
-        {
-            log.debug "Looking for current value of parameter ${it.@index}"
-            cmds << zwave.configurationV1.configurationGet(parameterNumber: it.@index.toInteger()).format()
-        }
-    }
-
-    if (device.currentValue("needUpdate") == "YES") { cmds += update_needed_settings() }
-    return cmds
-}
-
-/**
-* Configures the device to settings needed by SmarthThings at device discovery time.
-* Need a triple click on B-button to zwave commands to pass
-*/
-def configure() {
-    log.debug "Configuring Device For SmartThings Use"
-    def cmds = []
-
-    // Associate Group 3 Device Status (Group 1 is for Basic direct action -switches-, Group 2 for Tamper Alerts System -alarm-)
-    // Hub need to be Associate to group 3
-    cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
-    cmds += sync_properties()
-    delayBetween(cmds , 1500)
-}
-
-/**
-* Convert 1 and 2 bytes values to integer
-*/
-def cmd2Integer(array) { array.size() == 1 ? array[0] : ((array[0] & 0xFF) << 8) | (array[1] & 0xFF) }
 
 /**
 * Define the Fibaro motion senssor model used to generate preference pane.
