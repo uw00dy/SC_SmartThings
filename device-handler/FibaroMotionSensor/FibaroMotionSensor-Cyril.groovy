@@ -3,11 +3,11 @@
  *
  *  Device Type:		Fibaro Motion Sensor v3.2
  *  File Name:			fibarMotion.groovy
- *  Initial Release:	2014-12-10
- *  Author:				Soon Chye
+ *  Initial Release:		2016-07-09
+ *  Author:			CSC
  *  Credit:        		SmartThings, Fibar Group S.A., Cyril Peponnet
  *
- *  Copyright 2016 Soon Chye
+ *  Copyright 2016 CSC
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
