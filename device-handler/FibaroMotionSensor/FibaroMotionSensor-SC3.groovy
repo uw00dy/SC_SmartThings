@@ -3,8 +3,8 @@
  *
  *  Device Type:		Fibaro Motion Sensor v3.2
  *  File Name:			fibarMotion.groovy
- *  Initial Release:		2014-12-10
- *  Author:			Soon Chye
+ *  Initial Release:	2014-12-10
+ *  Author:				Soon Chye
  *  Credit:        		SmartThings, Fibar Group S.A., Cyril Peponnet
  *
  *  Copyright 2016 Soon Chye
@@ -12,7 +12,7 @@
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
@@ -30,15 +30,15 @@
 metadata {
 	definition (name: "Fibaro Motion Sensor (SC)", namespace: "soonchye", author: "Soon Chye") {
 		
-	attribute   "needUpdate", "string"
+		attribute   "needUpdate", "string"
 		
-	capability "Battery"
-	capability "Configuration"
-	capability "Illuminance Measurement"
-	capability "Motion Sensor"
-	capability "Sensor"
-	capability "Tamper Alert"
-	capability "Temperature Measurement"
+		capability "Battery"
+		capability "Configuration"
+		capability "Illuminance Measurement"
+		capability "Motion Sensor"
+		capability "Sensor"
+		capability "Tamper Alert"
+		capability "Temperature Measurement"
         
         command		"resetParams2StDefaults"
         command		"listCurrentParams"
@@ -162,14 +162,13 @@ def configure() {
     cmds += zwave.batteryV1.batteryGet()
     cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
     cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
+    //call last to tell the device it can go back to sleep to save battery
+    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
     
     //all the parameter updates
     cmds += update_needed_settings()
     
-    //call last to tell the device it can go back to sleep to save battery
-    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
-    
-    encapSequence(cmds, 1000)
+    encapSequence(cmds, 500)
     
     log.info "Update completed!"
 }
@@ -456,39 +455,6 @@ def resetParams2StDefaults() {
 /**************************************Cyril************************************************/
 
 /**
-* Update current cache properties
-* SC: this part never get executed
-*/
-def update_current_properties(cmd)
-{
-	log.debug "Execute: update_current_properties"
-    def currentProperties = state.currentProperties ?: [:]
-
-	log.debug "SC: Value of Parameter Number ${cmd.parameterNumber} = " + cmd.configurationValue
-    currentProperties."${cmd.parameterNumber}" = cmd.configurationValue
-
-    if (settings."${cmd.parameterNumber}" != null)
-    {
-        if (settings."${cmd.parameterNumber}".toInteger() == cmd2Integer(cmd.configurationValue))
-        {
-            sendEvent(name:"needUpdate", value:"NO", displayed:false, isStateChange: true)
-        }
-        else
-        {
-            sendEvent(name:"needUpdate", value:"YES", displayed:false, isStateChange: true)
-        }
-    }
-
-    state.currentProperties = currentProperties
-}
-
-/**
-* Convert 1 and 2 bytes values to integer
-*/
-def cmd2Integer(array) { array.size() == 1 ? array[0] : ((array[0] & 0xFF) << 8) | (array[1] & 0xFF) }
-
-
-/**
 * Update needed settings
 */
 def update_needed_settings()
@@ -502,16 +468,7 @@ def update_needed_settings()
     {
     	//log.debug "current index: ${it.@index}"
 		//log.debug "current settings: " + settings."${it.@index}"
-        
- 		/*
- 		if (currentProperties."${it.@index}" == null)
-        {
-            log.debug "Current value of parameter ${it.@index} is unknown"
-            isUpdateNeeded = "YES"
-        }
-        else if (settings."${it.@index}" != null && cmd2Integer(currentProperties."${it.@index}") != settings."${it.@index}".toInteger())
-        */
-        
+
         //should check which value change, only update those
         if (settings."${it.@index}" != null)
         {
@@ -533,7 +490,7 @@ def update_needed_settings()
     }
     
     //enable the log to view the parameter list
-    //log.info cmds    
+    log.info cmds    
     sendEvent(name:"needUpdate", value: isUpdateNeeded, displayed:false, isStateChange: true)
 
     return cmds
