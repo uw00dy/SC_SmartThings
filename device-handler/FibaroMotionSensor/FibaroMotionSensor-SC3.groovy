@@ -20,7 +20,7 @@
  *  for the specific language governing permissions and limitations under the License.
  *
  *  Ver1.0 - ZW5 + Cyril + Todd Wackford + Ronald Gouldner
- *
+ *  Note: the configure1 method is working now
  */
 
  preferences {
@@ -70,7 +70,7 @@ metadata {
         command		"resetParams2StDefaults"
         command		"listCurrentParams"
         command		"updateZwaveParam"
-        command		"test"
+        //command		"test"
         command		"configure"
         
         fingerprint deviceId: "0x1001", inClusters: "0x5E, 0x86, 0x72, 0x59, 0x80, 0x73, 0x56, 0x22, 0x31, 0x98, 0x7A", outClusters: ""
@@ -141,11 +141,57 @@ metadata {
     } 
 }
  
-/*for testing*/
-def configure() {
-	listCurrentParams()
+def configure1() {
+	log.debug "Executing 'configure'"
+    
+    def cmds = []
+    
+    cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 7200, nodeid: zwaveHubNodeId)//FGMS' default wake up interval
+    cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+    cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
+    cmds += zwave.versionV1.versionGet()
+    cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+    cmds += zwave.batteryV1.batteryGet()
+    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
+    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
+    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
+    
+    //20. Tamper - sensitivity. 0 = inactive. Range from 1-121, default = 20. Tested Ok
+    cmds += zwave.configurationV1.configurationSet(parameterNumber: 20, size: 1, configurationValue: [0])
+    
+    //80. Visual LED indicator. 4 - red, 5 - green, 6 - blue, 7 - yellow... Tested Ok
+    cmds += zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [5])
+    
+    //*----------------------------------------For testing-----------------------------------------------------------*//
+
+    encapSequence(cmds, 500)
 }
 
+private encapSequence(commands, delay=200) {
+	delayBetween(commands.collect{ encap(it) }, delay)
+}
+
+private encap(physicalgraph.zwave.Command cmd) {
+	def secureClasses = [0x20, 0x30, 0x5A, 0x70, 0x71, 0x84, 0x85, 0x8E, 0x9C]
+
+	//todo: check if secure inclusion was successful
+    //if not do not send security-encapsulated command
+	if (secureClasses.find{ it == cmd.commandClassId }) {
+    	secure(cmd)
+    } else {
+    	crc16(cmd)
+    }
+}
+
+
+private secure(physicalgraph.zwave.Command cmd) {
+	zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+}
+
+private crc16(physicalgraph.zwave.Command cmd) {
+	//zwave.crc16encapV1.crc16Encap().encapsulate(cmd).format()
+    "5601${cmd.format()}0000"
+}
 
  /**
  * Configures the device to settings needed by SmarthThings at device discovery time.
@@ -154,43 +200,49 @@ def configure() {
  *
  * @return none
  */
-def configure1() {
+def configure() {
 	log.debug "Configuring Device For SmartThings Use"
-	def cmds = []
-    
-	// send associate to group 3 to get sensor data reported only to hub
-	//cmds << zwave.associationV2.associationSet(groupingIdentifier:3, nodeId:[zwaveHubNodeId]).format()
-    cmds << zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+    def cmds = []
+
+    cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 7200, nodeid: zwaveHubNodeId)//FGMS' default wake up interval
+    cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
+    cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
+    cmds += zwave.versionV1.versionGet()
+    cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
+    cmds += zwave.batteryV1.batteryGet()
+    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
+    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
+    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
 	
 	//  Set Sensitivity (1) Values 8-255 default 10
-	log.debug "Setting sensitivity $sensitivity"
+	log.debug "1.1 Setting sensitivity $sensitivity"
 	def senseValue = sensitivity as int
 	if (senseValue < 8 || senseValue > 255) {
 		log.warn "Unknown sensitivity-Setting to default of 10"
 		senseValue = 10
 	}
-	log.debug "Setting Param 1 to $senseValue"
-	cmds << zwave.configurationV2.configurationSet(configurationValue: [senseValue], parameterNumber: 1, size: 1).format()
-        
+	log.debug "1.2 Setting Param 1 to $senseValue"
+	cmds += zwave.configurationV1.configurationSet(configurationValue: [senseValue], parameterNumber: 1, size: 1).format()
+    
 	//  Set Blind Time (3) Value 0-15 default 15
-	log.debug "Setting blind time $blindTime"
+	log.debug "1.1 Setting blind time $blindTime"
 	def blindValue = blindTime as int
 	if (blindValue < 0 || blindValue > 15) {
 		log.warn "Blind time outside allowed values-Setting to default of 15"
 		blindValue = 15
 	}
-	log.debug "Setting Param 2 to $blindValue"
-	cmds << zwave.configurationV2.configurationSet(configurationValue: [blindValue], parameterNumber: 2, size: 1).format()
-    
-	log.debug "Setting pir operating mode $pirOperatingMode"
+	log.debug "2.1 Setting Param 2 to $blindValue"
+	cmds += zwave.configurationV1.configurationSet(configurationValue: [blindValue], parameterNumber: 2, size: 1).format()
+ 
+	log.debug "3.2 Setting pir operating mode $pirOperatingMode"
 	def pirOperatingModeParamValue=0 // Both (default)
 	if (pirOperatingMode == "Day") {
 		pirOperatingModeParamValue=1
 	} else if (pirOperatingMode == "Night") {
 	    pirOperatingModeParamValue=2
 	}
-	log.debug "Setting Param 8 to $pirOperatingModeParamValue"
-	cmds << zwave.configurationV2.configurationSet(configurationValue: [pirOperatingModeParamValue], parameterNumber: 8, size: 1).format()
+	log.debug "4. Setting Param 8 to $pirOperatingModeParamValue"
+	cmds += zwave.configurationV1.configurationSet(configurationValue: [pirOperatingModeParamValue], parameterNumber: 8, size: 1).format()
 	
 	log.debug "Setting Night/Day threshold $nightDayThreshold"
 	def nightDayThresholdAsInt = nightDayThreshold.toInteger()
@@ -199,16 +251,15 @@ def configure1() {
 		def short nightDayThresholdHigh = (nightDayThresholdAsInt >> 8) & 0xFF
 		def nightDayThresholdBytes = [nightDayThresholdHigh, nightDayThresholdLow]
 		log.debug "Setting Param 9 to $nightDayThresholdBytes"
-		cmds << zwave.configurationV2.configurationSet(configurationValue: nightDayThresholdBytes, parameterNumber: 9, size: 2).format()
+		cmds += zwave.configurationV1.configurationSet(configurationValue: nightDayThresholdBytes, parameterNumber: 9, size: 2).format()
 	} else {
 		log.warn "Setting Param 9 out of rang changing to default of 200"
-	    cmds << zwave.configurationV2.configurationSet(configurationValue: [0,200], parameterNumber: 9, size: 2).format()
+	    cmds += zwave.configurationV1.configurationSet(configurationValue: [0,200], parameterNumber: 9, size: 2).format()
 	}
 	
-	
 	// turn on tamper sensor with active/inactive reports (use it as an acceleration sensor) default is 0, or off
-	log.debug "Setting Param 24 to value of 4 - HARD CODED"
-	cmds << zwave.configurationV2.configurationSet(configurationValue: [4], parameterNumber: 24, size: 1).format()
+	log.debug "3. Setting Param 24 to value of 4 - HARD CODED"
+	cmds += zwave.configurationV1.configurationSet(configurationValue: [4], parameterNumber: 24, size: 1).format()
 	
 	log.debug "Illum Report Threshole Preference illumReportThresh=$illumReportThresh"
 	def illumReportThreshAsInt = illumReportThresh.toInteger()
@@ -216,8 +267,8 @@ def configure1() {
 		def short illumReportThreshLow = illumReportThreshAsInt & 0xFF
 		def short illumReportThreshHigh = (illumReportThreshAsInt >> 8) & 0xFF
 		def illumReportThreshBytes = [illumReportThreshHigh, illumReportThreshLow]
-		log.debug "Setting Param 40 to $illumReportThreshBytes"
-		cmds << zwave.configurationV2.configurationSet(configurationValue: illumReportThreshBytes, parameterNumber: 40, size: 2).format()
+		log.debug "5. Setting Param 40 to $illumReportThreshBytes"
+		cmds += zwave.configurationV1.configurationSet(configurationValue: illumReportThreshBytes, parameterNumber: 40, size: 2).format()
 	}
 	
 	log.debug "Illum Interval Preference illumReportInt=$illumReportInt"
@@ -227,24 +278,24 @@ def configure1() {
 		def short illumReportIntHigh = (illumReportIntAsInt >> 8) & 0xFF
 		def illumReportBytes = [illumReportIntHigh, illumReportIntLow]
 		log.debug "Setting Param 42 to $illumReportBytes"
-		cmds << zwave.configurationV2.configurationSet(configurationValue: illumReportBytes, parameterNumber: 42, size: 2).format()
+		cmds += zwave.configurationV1.configurationSet(configurationValue: illumReportBytes, parameterNumber: 42, size: 2).format()
 	}
 	
 	// temperature change report threshold (0-255 = 0.1 to 25.5C) default is 1.0 Celcius, setting to .5 Celcius
 	log.debug "Setting Param 60 to value of 5 - HARD CODED"
-	cmds << zwave.configurationV2.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
+	cmds += zwave.configurationV1.configurationSet(configurationValue: [5], parameterNumber: 60, size: 1).format()
 	  
 	if (ledOnOff == "Off") {
 		log.debug "Setting LED off"
 		// 0 = LED Off signal mode
 		log.debug "Setting Param 80 to 0"
-	    cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 80, size: 1).format()
+	    cmds += zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 80, size: 1).format()
 	} else {
 	    log.debug "Setting LED on"
  	    // ToDo Add preference for other available Led Signal Modes
 		def ledModeConfigValue=0
 		log.debug "ledModeFrequency=$ledModeFrequency"
-		log.debug "ledModeColor=$ledModeColor"
+		log.debug "6. ledModeColor=$ledModeColor"
 		if (ledModeFrequency == "Once") {
 			if (ledModeColor == "Temp") {
 					ledModeConfigValue=1
@@ -319,8 +370,9 @@ def configure1() {
 			log.warn "Unknown LED Frequencey-Setting LED Mode to default of 10"
 			ledModeConfigValue=10
 		}
-		log.debug "Setting Param 80 to $ledModeConfigValue"
-		cmds << zwave.configurationV2.configurationSet(configurationValue: [ledModeConfigValue], parameterNumber: 80, size: 1).format()
+		log.debug "5. Setting Param 80 to $ledModeConfigValue"
+		cmds += zwave.configurationV1.configurationSet(configurationValue: [ledModeConfigValue], parameterNumber: 80, size: 1).format()
+	  //cmds += zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [5])
 	}
 	
 	//  Set Brightness Parameter (81) Percentage 0-100
@@ -335,19 +387,19 @@ def configure1() {
 		brightness=100
 	}
 	log.debug "Setting Param 81 to $brightness"
-	cmds << zwave.configurationV2.configurationSet(configurationValue: [brightness], parameterNumber: 81, size: 1).format()
+	cmds += zwave.configurationV1.configurationSet(configurationValue: [brightness], parameterNumber: 81, size: 1).format()
 	
 	if (tamperLedOnOff == "Off") {
 		log.debug "Setting Tamper LED off"
 		log.debug "Setting Param 89 to 0"
-		cmds << zwave.configurationV2.configurationSet(configurationValue: [0], parameterNumber: 89, size: 1).format()
+		cmds += zwave.configurationV1.configurationSet(configurationValue: [0], parameterNumber: 89, size: 1).format()
 	} else {
 		log.debug "Setting Tamper LED on"
 		log.debug "Setting Param 89 to 1"
-		cmds << zwave.configurationV2.configurationSet(configurationValue: [1], parameterNumber: 89, size: 1).format()
+		cmds += zwave.configurationV1.configurationSet(configurationValue: [1], parameterNumber: 89, size: 1).format()
 	}
 
-	delayBetween(cmds, 500)
+	encapSequence(cmds, 1000)
 }
 
 // parse events into attributes
@@ -518,40 +570,6 @@ def zwaveEvent(physicalgraph.zwave.commands.deviceresetlocallyv1.DeviceResetLoca
 	log.info "${device.displayName}: received command: $cmd - device has reset itself"
 }
 
-//used to add "test" button for simulation of user changes to parameters
-def test() {
-	def params = [paramNumber:80,value:10,size:1]
-	updateZwaveParam(params)
-}
-
- /**
- * This method will allow the user to update device parameters (behavior) from an app.
- * A "Zwave Tweaker" app will be developed as an interface to do this. Or the user can
- * write his/her own app to envoke this method. No type or value checking is done to
- * compare to what device capability or reaction. It is up to user to read OEM
- * documentation prior to envoking this method.
- *
- * <p>THIS IS AN ADVANCED OPERATION. USE AT YOUR OWN RISK! READ OEM DOCUMENTATION!
- *
- * @param List[paramNumber:80,value:10,size:1]
- *
- *
- * @return none
- */
-def updateZwaveParam(params) {
-	if ( params ) {   
-        def pNumber = params.paramNumber
-        def pSize	= params.size
-        def pValue	= [params.value]
-        log.debug "Make sure device is awake and in recieve mode"
-        log.debug "Updating ${device.displayName} parameter number '${pNumber}' with value '${pValue}' with size of '${pSize}'"
-
-		def cmds = []
-        cmds << zwave.configurationV1.configurationSet(configurationValue: pValue, parameterNumber: pNumber, size: pSize).format()
-        cmds << zwave.configurationV1.configurationGet(parameterNumber: pNumber).format()
-        delayBetween(cmds, 1000)        
-    }
-}
 
  /**
  * Sets all of available Fibaro parameters back to the device defaults except for what
@@ -680,21 +698,6 @@ def listCurrentParams() {
     //cmds << zwave.configurationV1.configurationGet(parameterNumber: 60).format()
     //cmds << zwave.configurationV1.configurationGet(parameterNumber: 20).format()
     //cmds << zwave.configurationV1.configurationGet(parameterNumber: 40).format()
-    
-    cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 7200, nodeid: zwaveHubNodeId)//FGMS' default wake up interval
-    cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
-    cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
-    cmds += zwave.versionV1.versionGet()
-    cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
-    cmds += response(zwave.batteryV1.batteryGet().format())
-    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
-    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
-	
-    //issue a WakeUpNoMoreInformation command to tell the device it can go back to sleep to save battery
-    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
-    
-    // Tamper LED Flashing (White/REd/Blue) 0=Off 1=On	
-    cmds += zwave.configurationV2.configurationSet(parameterNumber: 89, size: 1, configurationValue: [0]).format()
-    
+
 	delayBetween(cmds, 500)
 }
