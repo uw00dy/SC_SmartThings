@@ -1,5 +1,5 @@
 /**
- *  TVDevice v1.0.20160619
+ *  TVDevice v1.0.20160802
  *
  *  Source code can be found here: https://github.com/JZ-SmartThings/SmartThings/blob/master/Devices/TVDevice/TVDevice.groovy
  *
@@ -23,8 +23,8 @@ metadata {
 		capability "Switch"
 		capability "Switch Level"
 		attribute "displayName", "string"
-		command "tvseven"
-		command "tvsmarthub"
+		command "tvinput"
+		command "tvprev"
 		command "tvmute"
 		command "ResetTiles"
 	}
@@ -53,7 +53,7 @@ metadata {
 		//	state("default", label: '{currentValue}', backgroundColor:"#ffffff")
 		//}
 		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true, decoration: "flat") {
-			state "off", label:'OFF' , action: "on", icon: "st.Electronics.electronics18", backgroundColor:"#ffffff", nextState: "trying"
+			state "off", label:'OFF' , action: "on", icon: "st.Electronics.electronics18", backgroundColor:"#53a7c0", nextState: "trying"
 			state "on", label: 'ON', action: "off", icon: "st.Electronics.electronics18", backgroundColor: "#FF6600", nextState: "trying"
 			state "trying", label: 'TRYING', icon: "st.Electronics.electronics18", backgroundColor: "#FFAA33"
 		}
@@ -65,12 +65,12 @@ metadata {
 			state "default", label:'OFF' , action: "off", icon: "st.Electronics.electronics18", backgroundColor:"#53a7c0", nextState: "trying"
 			state "trying", label: 'TRYING', action: "ResetTiles", icon: "st.Electronics.electronics18", backgroundColor: "#FFAA33"
 		}
-		standardTile("tvseven", "device.switch", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true, decoration: "flat") {
-			state "default", label: 'U', action: "tvseven", icon: "st.Electronics.electronics6", backgroundColor: "#79b821", nextState: "trying"
+		standardTile("tvinput", "device.switch", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true, decoration: "flat") {
+			state "default", label: 'TV INPUT', action: "tvinput", icon: "st.Electronics.electronics6", backgroundColor: "#79b821", nextState: "trying"
 			state "trying", label: 'TRYING', action: "ResetTiles", icon: "st.Electronics.electronics6", backgroundColor: "#FFAA33"
 		}
-		standardTile("tvsmarthub", "device.switch", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true, decoration: "flat") {
-			state "default", label: 'Hub', action: "tvsmarthub", icon: "st.motion.motion.active", backgroundColor: "#79b821", nextState: "trying"
+		standardTile("tvprev", "device.switch", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true, decoration: "flat") {
+			state "default", label: 'PREVIOUS', action: "tvprev", icon: "st.motion.motion.active", backgroundColor: "#79b821", nextState: "trying"
 			state "trying", label: 'TRYING', action: "ResetTiles", icon: "st.motion.motion.active", backgroundColor: "#FFAA33"
 		}
 		standardTile("tvmute", "device.switch", width: 2, height: 2, canChangeIcon: true, canChangeBackground: true, decoration: "flat") {
@@ -82,26 +82,24 @@ metadata {
 		}
 		
 		main "switch"
-		details(["displayName","levelSliderControl", "switchon", "switchoff", "tvseven", "tvsmarthub", "tvmute" ])
+		details(["displayName","levelSliderControl", "switchon", "switchoff", "tvinput", "tvprev", "tvmute" ])
 	}
 }
 
 def ResetTiles() {
 	sendEvent(name: "switchon", value: "default", isStateChange: true)
 	sendEvent(name: "switchoff", value: "default", isStateChange: true)
-	sendEvent(name: "tvseven", value: "default", isStateChange: true)
-	sendEvent(name: "tvsmarthub", value: "default", isStateChange: true)
+	sendEvent(name: "tvinput", value: "default", isStateChange: true)
+	sendEvent(name: "tvprev", value: "default", isStateChange: true)
 	sendEvent(name: "tvmute", value: "default", isStateChange: true)
 	log.debug "Resetting tiles."
 }
 
 
 def setLevel(value) {
-    def level = Math.min(value as Integer, 99)
-	log.debug level + "---test"
-	runCmd("/ir?hdmi=" + value)
-//	sendEvent(name: "level", value: value, unit: "")
-//	sendEvent(name: "switch", value: "on", unit: "")
+	def level=value as int
+	//log.debug level + "---test"
+	runCmd("/ir?hdmi=" + level)
 }
 
 def on() {
@@ -111,11 +109,11 @@ def on() {
 def off() {
 	runCmd("/ir?tv=off")
 }
-def tvseven() {
-	runCmd("/ir?tv=seven")
+def tvinput() {
+	runCmd("/ir?tv=input")
 }
-def tvsmarthub() {
-	runCmd("/ir?tv=smarthub")
+def tvprev() {
+	runCmd("/ir?tv=prev")
 }
 def tvmute() {
 	runCmd("/ir?tv=mute")
@@ -127,8 +125,7 @@ def runCmd(String varCommand) {
 	def LocalDevicePort = ''
 	if (DevicePort==null) { LocalDevicePort = "80" } else { LocalDevicePort = DevicePort }
 	def porthex = convertPortToHex(LocalDevicePort).toUpperCase()
-	//commented by sc
-    //device.deviceNetworkId = "$hosthex:$porthex"
+	device.deviceNetworkId = "$hosthex:$porthex"
 	def userpassascii = "${HTTPUser}:${HTTPPassword}"
 	def userpass = "Basic " + userpassascii.encodeAsBase64().toString()
 
@@ -220,19 +217,13 @@ def parse(String description) {
 			sendEvent(name: "switchoff", value: "default", isStateChange: true)
 			whichTile = 'mainoff'
 		}
-		if (jsonlist."tv"=="seven") {
-			sendEvent(name: "tvseven", value: "default", isStateChange: true)
-			whichTile = 'tvseven'
+		if (jsonlist."tv"=="input") {
+			sendEvent(name: "tvinput", value: "default", isStateChange: true)
+			whichTile = 'tvinput'
 		}
-        /*
-		if (jsonlist."tv"=="next") {
+		if (jsonlist."tv"=="prev") {
 			sendEvent(name: "tvprev", value: "default", isStateChange: true)
 			whichTile = 'tvprev'
-		}
-        */
-		if (jsonlist."tv"=="smarthub") {
-			sendEvent(name: "tvsmarthub", value: "default", isStateChange: true)
-			whichTile = 'tvsmarthub'
 		}
 		if (jsonlist."tv"=="mute") {
 			sendEvent(name: "tvmute", value: "default", isStateChange: true)
@@ -240,10 +231,10 @@ def parse(String description) {
 		}
 	}
 
-	//log.debug jsonlist
+	log.debug jsonlist
 
 	//RESET THE DEVICE ID TO GENERIC/RANDOM NUMBER. THIS ALLOWS MULTIPLE DEVICES TO USE THE SAME ID/IP
-	//device.deviceNetworkId = "ID_WILL_BE_CHANGED_AT_RUNTIME_" + (Math.abs(new Random().nextInt()) % 99999 + 1)
+	device.deviceNetworkId = "ID_WILL_BE_CHANGED_AT_RUNTIME_" + (Math.abs(new Random().nextInt()) % 99999 + 1)
 
 	//CHANGE NAME TILE
 	sendEvent(name: "displayName", value: DeviceIP, unit: "")
@@ -263,13 +254,13 @@ def parse(String description) {
 			sendEvent(name: "switch", value: "on", isStateChange: true)
 			def result = createEvent(name: "switchon", value: "default", isStateChange: true)
 			return result
-        case 'tvseven':
+        case 'tvinput':
 			//sendEvent(name: "tvinput", value: "default", isStateChange: true)
-			def result = createEvent(name: "tvseven", value: "default", isStateChange: true)
+			def result = createEvent(name: "tvinput", value: "default", isStateChange: true)
 			return result
-        case 'tvsmarthub':
+        case 'tvprev':
 			//sendEvent(name: "tvprev", value: "default", isStateChange: true)
-			def result = createEvent(name: "tvsmarthub", value: "default", isStateChange: true)
+			def result = createEvent(name: "tvprev", value: "default", isStateChange: true)
 			return result
         case 'tvmute':
 			//sendEvent(name: "tvmute", value: "default", isStateChange: true)
