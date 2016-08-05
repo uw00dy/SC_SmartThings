@@ -1,6 +1,6 @@
 /*
 * Author: tguerena and surge919
-*
+* Source: https://community.smartthings.com/t/beta-release-uri-switch-device-handler-for-controlling-items-via-http-calls/37842
 * Device Handler
 */
 
