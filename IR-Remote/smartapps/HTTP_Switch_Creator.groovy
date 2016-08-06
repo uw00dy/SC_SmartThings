@@ -17,8 +17,8 @@
  */
 definition(
     name: "HTTP Switch Creator",
-    namespace: "soonchye",
-    author: "Soon Chye",
+    namespace: "sc",
+    author: "SC",
     description: "Creates HTTP switches on the fly!",
     category: "Convenience",
     iconUrl: "https://github.com/chancsc/icon/raw/master/standard-tile%401x.png",
@@ -50,7 +50,7 @@ def initialize() {
     log.debug(deviceId)
     def existing = getChildDevice(deviceId)
     if (!existing) {
-        def childDevice = addChildDevice("smartthings", "HTTP Switch", deviceId, null, [label: switchLabel])
+        def childDevice = addChildDevice("sc", "HTTP Switch", deviceId, null, [label: switchLabel])
     }
 }
 
