@@ -30,6 +30,9 @@ preferences {
 	section("Create HTTP Switch") {
 		input "switchLabel", "text", title: "Switch Label", required: true
 	}
+    section("on this hub...") {
+        input "theHub", "hub", multiple: false, required: true
+    }
 }
 
 def installed() {
@@ -46,11 +49,12 @@ def updated() {
 }
 
 def initialize() {
-    def deviceId = app.id + "SimulatedSwitch"
+    def deviceId = app.id
     log.debug(deviceId)
     def existing = getChildDevice(deviceId)
     if (!existing) {
-        def childDevice = addChildDevice("sc", "HTTP Switch", deviceId, location.hubs[0].id, [label: switchLabel])
+        //def childDevice = addChildDevice("sc", "HTTP Switch", deviceId, null, [label: switchLabel])
+        def childDevice = addChildDevice("sc", "HTTP Switch", deviceId, theHub.id, [label: switchLabel])
     }
 }
 
