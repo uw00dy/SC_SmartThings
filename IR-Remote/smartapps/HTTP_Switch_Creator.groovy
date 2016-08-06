@@ -50,7 +50,7 @@ def initialize() {
     log.debug(deviceId)
     def existing = getChildDevice(deviceId)
     if (!existing) {
-        def childDevice = addChildDevice("sc", "HTTP Switch", deviceId, null, [label: switchLabel])
+        def childDevice = addChildDevice("sc", "HTTP Switch", deviceId, location.hubs[0].id, [label: switchLabel])
     }
 }
 
