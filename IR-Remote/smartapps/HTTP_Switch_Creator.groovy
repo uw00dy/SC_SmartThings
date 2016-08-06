@@ -14,6 +14,8 @@
  *
  *  Credit: Eric Roberts (baldeagle072) - Virtual switch creator
  *  Credit: tguerena and surge919 - URI Switch
+ *  
+ *  Fix addChildDevice problem - https://community.smartthings.com/t/use-addchilddevice-with-manual-ip-entry/4594/23
  */
 definition(
     name: "HTTP Switch Creator",
