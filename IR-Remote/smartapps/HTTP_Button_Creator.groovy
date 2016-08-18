@@ -1,5 +1,5 @@
 /**
- *  HTTP Switch Creator
+ *  HTTP Button Creator
  *  Category: Smart App
  *  Copyright 2016 Soon Chye
  *
@@ -29,7 +29,7 @@ definition(
 
 
 preferences {
-	section("Create HTTP Switch") {
+	section("Create HTTP Button") {
 		input "switchLabel", "text", title: "Button Label", required: true
 	}
     section("on this hub...") {
