@@ -5,28 +5,14 @@
  *  File Name:			fibaro-smoke-sensor.groovy
  *	Initial Release:	2016-08-23
  *	@author:			CSC
- *  Email:				chancsc@me.com
  *  @version:			1.0
  *
- *  Copyright 2016 Soon Chye
+ *  Copyright 2016 CSC
  *
  *  Software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  *  either express or implied. See the License for the specific language governing permissions
  *  and limitations under the License.
  *
- */
- 
- /**
- * Sets up metadata, simulator info and tile definition. The tamper tile is setup, but 
- * not displayed to the user. We do this so we can receive events and display on device 
- * activity. If the user wants to display the tamper tile, adjust the tile display lines
- * with the following:
- *		main(["water", "temperature", "tamper"])
- *		details(["water", "temperature", "battery", "tamper"])
- *
- * @param none
- *
- * @return none
  */
 metadata {
 	definition (name: "Fibaro Smoke Sensor (SC)", namespace: "smartthings", author: "SmartThings") {
@@ -38,13 +24,6 @@ metadata {
         
         attribute "tamper", "enum", ["detected", "clear"]
         attribute "heatAlarm", "enum", ["overheat detected", "clear", "rapid temperature rise", "underheat detected"]
-
-/*
-        command		"resetParams2StDefaults"
-        command		"listCurrentParams"
-        command		"updateZwaveParam"
-        command		"test"
-*/
         
         fingerprint deviceId: "0x1000", inClusters: "0x9C, 0x31, 0x86, 0x72, 0x70, 0x85, 0x8E, 0x8B, 0x56, 0x84, 0x80", outClusters: ""
         fingerprint mfr:"010F", prod:"0C00", model:"1000"
@@ -489,112 +468,3 @@ def configure() {
     commands(request) + ["delay 10000", zwave.wakeUpV1.wakeUpNoMoreInformation().format()]
 
 }
-
-
-//used to add "test" button for simulation of user changes to parameters
-def test() {
-	def params = [paramNumber:12,value:4,size:1]
-	updateZwaveParam(params)
-}
-
- /**
- * This method will allow the user to update device parameters (behavior) from an app.
- * A "Zwave Tweaker" app will be developed as an interface to do this. Or the user can
- * write his/her own app to envoke this method. No type or value checking is done to
- * compare to what device capability or reaction. It is up to user to read OEM
- * documentation prio to envoking this method.
- *
- * <p>THIS IS AN ADVANCED OPERATION. USE AT YOUR OWN RISK! READ OEM DOCUMENTATION!
- *
- * @param List[paramNumber:80,value:10,size:1]
- *
- *
- * @return none
- */
-def updateZwaveParam(params) {
-	if ( params ) {     
-        def pNumber = params.paramNumber
-        def pSize	= params.size
-        def pValue	= [params.value]
-        log.debug "Make sure device is awake and in recieve mode (triple-click?)"
-        log.debug "Updating ${device.displayName} parameter number '${pNumber}' with value '${pValue}' with size of '${pSize}'"
-
-		def cmds = []
-        cmds << zwave.configurationV1.configurationSet(configurationValue: pValue, parameterNumber: pNumber, size: pSize).format()
-        cmds << zwave.configurationV1.configurationGet(parameterNumber: pNumber).format()
-        delayBetween(cmds, 1000)        
-    }
-}
-
- /**
- * Sets all of available Fibaro parameters back to the device defaults except for what
- * SmartThings needs to support the stock functionality as released. This will be
- * called from the "Fibaro Tweaker" or user's app.
- *
- * <p>THIS IS AN ADVANCED OPERATION. USE AT YOUR OWN RISK! READ OEM DOCUMENTATION!
- *
- * @param none
- *
- * @return none
- */
-def resetParams2StDefaults() {
-	log.debug "Resetting ${device.displayName} parameters to SmartThings compatible defaults"
-	def cmds = []
-	cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], 			parameterNumber: 1,  size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [3], 			parameterNumber: 2,  size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [255], 			parameterNumber: 5,  size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [255], 			parameterNumber: 7,  size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [1], 			parameterNumber: 9,  size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,60*60], 		parameterNumber: 10, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,50], 			parameterNumber: 12, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0],				parameterNumber: 13, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [5,220], 		parameterNumber: 50, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [13,172],		parameterNumber: 51, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0,0,225],		parameterNumber: 61, size: 4).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,255,0,0], 	parameterNumber: 62, size: 4).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [2], 			parameterNumber: 63, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], 			parameterNumber: 73, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [2], 			parameterNumber: 74, size: 1).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], 			parameterNumber: 75, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0,0], 			parameterNumber: 76, size: 2).format()
-    cmds << zwave.configurationV1.configurationSet(configurationValue: [0], 			parameterNumber: 77, size: 1).format()
-    
-    delayBetween(cmds, 1200)
-}
-
- /**
- * Lists all of available Fibaro parameters and thier current settings out to the 
- * logging window in the IDE This will be called from the "Fibaro Tweaker" or 
- * user's own app.
- *
- * <p>THIS IS AN ADVANCED OPERATION. USE AT YOUR OWN RISK! READ OEM DOCUMENTATION!
- *
- * @param none
- *
- * @return none
- */
-def listCurrentParams() {
-	log.debug "Listing of current parameter settings of ${device.displayName}"
-	def cmds = []
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 1).format() 
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 2).format() 
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 5).format() 
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 7).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 9).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 10).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 12).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 13).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 50).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 51).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 61).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 62).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 63).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 73).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 74).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 75).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 76).format()
-    cmds << zwave.configurationV1.configurationGet(parameterNumber: 77).format()
-    
-	delayBetween(cmds, 1200)
-}
-
