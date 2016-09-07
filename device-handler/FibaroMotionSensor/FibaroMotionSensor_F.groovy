@@ -22,13 +22,15 @@
  *  Note: The configure1 method is working now
  *  Cyril's original code: https://community.smartthings.com/t/beta-fibaro-motion-sensor-new-device-handler-with-all-settings-and-auto-sync-feature/18779
  *  SmartThings original code: https://github.com/SmartThingsCommunity/SmartThingsPublic/blob/master/devicetypes/fibargroup/fibaro-motion-sensor-zw5.src/fibaro-motion-sensor-zw5.groovy
+ *
+ *  Ver 1.1 - hardcode the F temperature convertion (US user)
  */
 
  /**
  * Sets up metadata, simulator info and tile definition.
  */
 metadata {
-	definition (name: "Fibaro Motion Sensor (SC)", namespace: "soonchye", author: "Soon Chye") {
+	definition (name: "Fibaro Motion Sensor (v3.2)", namespace: "soonchye", author: "Soon Chye") {
 		
 		attribute   "needUpdate", "string"
 		
@@ -165,74 +167,12 @@ def configure() {
     cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
     cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
     
-    //80. Visual LED indicator. 4 - red, 5 - green, 6 - blue, 7 - yellow... Tested Ok
-    //cmds += zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [7])
-    
     cmds += update_needed_settings()
     
     encapSequence(cmds, 500)
 
 }
 
-
-/**
-* SC: This configure is working sample, change change the configure1 to configure & rename the existing, it will work
-*/
-def configure2() {
-	log.debug "Executing 'configure'"
-    
-    def cmds = []
-    
-    cmds += zwave.wakeUpV2.wakeUpIntervalSet(seconds: 7200, nodeid: zwaveHubNodeId)//FGMS' default wake up interval
-    cmds += zwave.manufacturerSpecificV2.manufacturerSpecificGet()
-    cmds += zwave.manufacturerSpecificV2.deviceSpecificGet()
-    cmds += zwave.versionV1.versionGet()
-    cmds += zwave.associationV2.associationSet(groupingIdentifier:1, nodeId:[zwaveHubNodeId])
-    cmds += zwave.batteryV1.batteryGet()
-    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 1, scale: 0)
-    cmds += zwave.sensorMultilevelV5.sensorMultilevelGet(sensorType: 3, scale: 1)
-    cmds += zwave.wakeUpV2.wakeUpNoMoreInformation()
-    
-    //20. Tamper - sensitivity. 0 = inactive. Range from 1-121, default = 20. Tested Ok
-    cmds += zwave.configurationV1.configurationSet(parameterNumber: 20, size: 1, configurationValue: [0])
-    
-    //80. Visual LED indicator. 4 - red, 5 - green, 6 - blue, 7 - yellow... Tested Ok
-    cmds += zwave.configurationV1.configurationSet(parameterNumber: 80, size: 1, configurationValue: [5])
-    
-    encapSequence(cmds, 500)
-}
-
-
-/* This parse work with CSC version
-// parse events into attributes
-def parse(String description) {
-	log.debug "Parsing '${description}'"        
-    def result = []
-    
-    if (description.startsWith("Err 106")) {
-		if (state.sec) {
-			result = createEvent(descriptionText:description, displayed:false)
-		} else {
-			result = createEvent(
-				descriptionText: "FGK failed to complete the network security key exchange. If you are unable to receive data from it, you must remove it from your network and add it again.",
-				eventType: "ALERT",
-				name: "secureInclusion",
-				value: "failed",
-				displayed: true,
-			)
-		}
-	} else if (description == "updated") {
-		return null
-	} else {
-    	def cmd = zwave.parse(description, [0x31: 5, 0x56: 1, 0x71: 3, 0x72: 2, 0x80: 1, 0x84: 2, 0x85: 2, 0x86: 1, 0x98: 1])
-    
-    	if (cmd) {
-    		log.debug "Parsed '${cmd}'"
-        	zwaveEvent(cmd)
-    	}
-    }
-}
-*/
 
 /**
 * Parse incoming device messages to generate events
@@ -295,12 +235,14 @@ def zwaveEvent(physicalgraph.zwave.commands.crc16encapv1.Crc16Encap cmd)
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.sensormultilevelv5.SensorMultilevelReport cmd) {
-	def map = [ displayed: true ]
+    def map = [ displayed: true ]
     switch (cmd.sensorType) {
     	case 1:
         	map.name = "temperature"
             map.unit = cmd.scale == 1 ? "F" : "C"
-            map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, map.unit, cmd.precision)
+            //map.value = convertTemperatureIfNeeded(cmd.scaledSensorValue, map.unit, cmd.precision)
+            //no convertion for the value
+            map.value = cmd.scaledSensorValue.toInteger().toString()
             break
     	case 3:
         	map.name = "illuminance"
