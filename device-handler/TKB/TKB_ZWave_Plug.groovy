@@ -20,7 +20,7 @@
  */
 
 metadata {
-        definition (name: "TBK Z-Wave Plug (TZ68E)", author: "SoonChye") {
+        definition (name: "TKB Z-Wave Plug (TZ68E)", author: "SoonChye") {
                 capability "Switch"
                 capability "Refresh"
                 capability "Indicator"
