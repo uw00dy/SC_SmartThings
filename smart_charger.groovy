@@ -15,6 +15,7 @@
  *  Version 1.1 - added enable/disable switch
  *  Version 1.2 - added delay, there are instance when start to charge, power was below threshold & outlet get turn off
  *				  this update will wait for 1 mins & if the power go above the threshold, it will cancel the turn off scheduler
+ *  Version 1.21 - output the current voltage to log
  */
 definition(
     name: "Smart Charger",
@@ -91,7 +92,7 @@ def meterHandler(evt) {
 //        	log.debug "not sending notification for ${evt.description} because the threshold (${belowThreshold}) has already been crossed"
         }
     } else {
-    	log.debug "${meter} - charging in progress. Cancelling turn off scheduler (if any)."
+    	log.debug "${meter} - charging in progress (${meterValue} W). Cancelling turn off scheduler (if any)."
         unschedule(scheduledHandler)
     }
 }
