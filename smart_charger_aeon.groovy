@@ -7,7 +7,7 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  Version 1.0
+ *  Version 1.01 - bug fixes
  */
 definition(
     name: "Smart Charger (Aeon Labs)",
@@ -22,7 +22,7 @@ definition(
 
 preferences {
 	section {
-		input(name: "meter", type: "capability. switch", title: "When This Power Outlet...", required: true, multiple: false, description: null)
+		input(name: "meter", type: "capability.switch", title: "When This Energy Outlet ...", required: true, multiple: false, description: null)
         input(name: "belowThreshold", type: "text", title: "Energy Consumption Falls Below", required: true, description: "in W (watts).")
 	}
     section {
@@ -58,13 +58,15 @@ def updated() {
 def initialize() {
 	if (settings.enabled == true) {
 		//subscribe(meter, "power", meterHandler)
-        subscribe(meter, "energy", myHandler)
+        subscribe(meter, "energy", meterHandler)
     }
 }
 
 def meterHandler(evt) {
-	log.debug "$meter.currentEnergy"
+	log.debug "meter.currentEnergy: $meter.currentEnergy"
+    
     def meterValue = evt.value as double
+	log.debug "meterValue: $meterValue"
 
     if (!atomicState.lastValue) {
     	atomicState.lastValue = meterValue
