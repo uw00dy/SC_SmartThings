@@ -8,7 +8,7 @@
  */
 definition(
     name: "Sonoff Device Creator",
-    namespace: "sc",
+    namespace: "csc",
     author: "CSC",
     description: "Creates Sonoff Device on the fly!",
     category: "Convenience",
