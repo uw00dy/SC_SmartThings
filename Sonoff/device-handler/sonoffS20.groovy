@@ -12,16 +12,20 @@ import groovy.json.JsonSlurper
 metadata {
 	definition (name: "Sonoff", namespace: "csc", author: "CSC") {
         capability "Switch"
+        capability "Refresh"
+        capability "Indicator"
+        
 		attribute "triggerswitch", "string"
 		command "DeviceTrigger"
+        command	"led"
 	}
 
 	preferences {
 		input("DeviceIP", "string", title:"Device IP Address", description: "Please enter your device's IP Address", required: true, displayDuringSetup: true)
 		input("DevicePort", "string", title:"Device Port", description: "Empty assumes port 80.", required: false, displayDuringSetup: true)
-		input("DevicePathOn", "string", title:"URL Path for ON", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
-		input("DevicePathOff", "string", title:"URL Path for OFF", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
-		input(name: "DevicePostGet", type: "enum", title: "POST or GET", options: ["POST","GET"], defaultValue: "POST", required: false, displayDuringSetup: true)
+		//input("DevicePathOn", "string", title:"URL Path for ON", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
+		//input("DevicePathOff", "string", title:"URL Path for OFF", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
+		input(name: "DevicePostGet", type: "enum", title: "POST or GET", options: ["POST","GET"], defaultValue: "GET", required: false, displayDuringSetup: true)
 		section() {
 			input("HTTPAuth", "bool", title:"Requires User Auth?", description: "Choose if the HTTP requires basic authentication", defaultValue: false, required: true, displayDuringSetup: true)
 			input("HTTPUser", "string", title:"HTTP User", description: "Enter your basic username", required: false, displayDuringSetup: true)
@@ -37,11 +41,19 @@ metadata {
 	// UI tile definitions
 	tiles {
 		standardTile("DeviceTrigger", "device.triggerswitch", width: 2, height: 2, canChangeIcon: true) {
-			state "default", label: 'Push', action: "on", backgroundColor: "#ffffff", nextState: "trying"
-			state "sending", label: 'Trying', action: "off", backgroundColor: "#79b821", nextState: "off"
+			state "triggeroff", label: 'Off', action: "on", icon: "st.switches.switch.off", backgroundColor: "#ffffff", nextState: "on"
+			state "triggeron", label: 'On', action: "off", icon: "st.switches.switch.on", backgroundColor: "#79b821", nextState: "off"
 		}
+        standardTile("refresh", "command.refresh", decoration: "flat") {
+			state "default", label:'', action:"refresh.refresh", icon:"st.secondary.refresh"
+		}
+		standardTile("indicator", "device.indicatorStatus", inactiveLabel: false, decoration: "flat") {
+			state "off", action:"indicator.indicatorWhenOff", icon:"st.indicators.lit-when-on"
+			state "on", action:"indicator.indicatorWhenOn", icon:"st.indicators.never-on"
+		}
+                
 		main "DeviceTrigger"
-			details (["DeviceTrigger"])
+			details (["DeviceTrigger", "refresh", "indicator"])
 	}
 }
 
@@ -50,14 +62,30 @@ def parse(String description) {
 }
 
 def on() {
+	def DevicePathOn = "/control?cmd=gpio%2C12%2C1"
 	log.debug "---ON COMMAND--- ${DevicePathOn}"
     sendEvent(name: "triggerswitch", value: "triggeron", isStateChange: true)
 	runCmd(DevicePathOn)
 }
 
 def off() {
+	def DevicePathOff = "/control?cmd=gpio%2C12%2C0"
 	log.debug "---OFF COMMAND--- ${DevicePathOff}"
     sendEvent(name: "triggerswitch", value: "triggeroff", isStateChange: true)
+    runCmd(DevicePathOff)
+}
+
+def indicatorWhenOn() {
+	def DevicePathOn = "/control?cmd=gpio%2C13%2C0"
+	log.debug "---on COMMAND--- ${DevicePathOn}"
+    sendEvent(name: "indicatorStatus", value: "off", isStateChange: true)
+    runCmd(DevicePathOn)
+}
+
+def indicatorWhenOff() {
+	def DevicePathOff = "/control?cmd=gpio%2C13%2C1"
+	log.debug "---OFF COMMAND--- ${DevicePathOff}"
+    sendEvent(name: "indicatorStatus", value: "on", isStateChange: true)
     runCmd(DevicePathOff)
 }
 
