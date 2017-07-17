@@ -10,7 +10,7 @@
 import groovy.json.JsonSlurper
 
 metadata {
-	definition (name: "Sonoff", namespace: "sc", author: "CSC") {
+	definition (name: "Sonoff", namespace: "csc", author: "CSC") {
         capability "Switch"
 		attribute "triggerswitch", "string"
 		command "DeviceTrigger"
