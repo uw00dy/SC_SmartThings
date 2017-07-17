@@ -1,16 +1,16 @@
 /*
-*  Sonoff S20
-*  Category: Device Handler
+*  Sonoff S20 - Device Handler
+*  Type: Device Handler
 * 
-*  Copyright 2007 (C) Chancsc@gmail.com
+*  Copyright 2007 (C) chancsc@gmail.com
 * 
-*  
+*  v1.0
 */
 
 import groovy.json.JsonSlurper
 
 metadata {
-	definition (name: "SonoffS20 Wifi Plug", namespace: "sc", author: "CSC") {
+	definition (name: "Sonoff", namespace: "sc", author: "CSC") {
         capability "Switch"
 		attribute "triggerswitch", "string"
 		command "DeviceTrigger"
