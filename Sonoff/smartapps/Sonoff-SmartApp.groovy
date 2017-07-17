@@ -7,7 +7,7 @@
  *  v1.0 - 
  */
 definition(
-    name: "SonoffS20 Device Creator",
+    name: "Sonoff Device Creator",
     namespace: "sc",
     author: "CSC",
     description: "Creates Sonoff Device on the fly!",
@@ -44,7 +44,7 @@ def initialize() {
     log.debug(deviceId)
     def existing = getChildDevice(deviceId)
     if (!existing) {
-        def childDevice = addChildDevice("sc", "Sonoff", deviceId, theHub.id, [label: deviceLabel])
+        def childDevice = addChildDevice("csc", "Sonoff", deviceId, theHub.id, [label: deviceLabel])
     }
 }
 
