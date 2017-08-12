@@ -58,7 +58,7 @@ def initialize() {
 
 
 def updateCurrentWeather() {
-    
+
     def params = [
         uri: "http://weatherstation.wunderground.com",
         path: "/weatherstation/updateweatherstation.php",
