@@ -66,7 +66,7 @@ def updateCurrentWeather() {
             "ID": weatherID,
             "PASSWORD": password,
             "dateutc": "now",
-            "tempf": temp.currentTemperature,
+            "tempf": temp.currentTemperature * 1.8 + 32,
             "humidity": humidity.currentHumidity,
             "action": "updateraw"
         ]
