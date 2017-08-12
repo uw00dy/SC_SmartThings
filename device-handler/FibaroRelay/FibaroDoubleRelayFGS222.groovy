@@ -5,11 +5,11 @@
  *	Original Author: Robin Winbourne
  *	Date: 2017-01-18 
  *  Modified by: (C) CSC 2017-08-12
- *  Change 
+ *  Change to use for curtain motor
  */
  
 metadata {
-definition (name: "Fibaro FGS-222 Double Relay Switch", namespace: "csc", author: "CSC") {
+definition (name: "Fibaro FGS-222 Double Relay Switch", namespace: "smartthings", author: "Robin Winbourne") {
 capability "Switch"
 capability "Relay Switch"
 capability "Polling"
@@ -39,20 +39,21 @@ reply "200100,delay 100,2502": "command: 2503, payload: 00"
 }
 
 tiles(scale: 2){
-
+/*
     multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-				attributeState "on", label: '${name}', action: "switch.off", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-				attributeState "off", label: '${name}', action: "switch.on", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+				attributeState "on", label: '${name}', action: "switch.off", icon: "st.contact.contact.open", backgroundColor: "#79b821"
+				attributeState "off", label: '${name}', action: "switch.on", icon: "st.contact.contact.closed", backgroundColor: "#ffffff"
 			}
 	}
-	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 3, height: 3) {
-		state "on", label: "switch1", action: "off1", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-		state "off", label: "switch1", action: "on1", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
-    }
+*/
+	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 3, height:3) {
+		state "on", label: "Open", action: "off1", icon: "st.contact.contact.open", backgroundColor: "#79b821"
+		state "off", label: "Open", action: "on1", icon: "st.contact.contact.open", backgroundColor: "#ffffff"
+	}
 	standardTile("switch2", "device.switch2",canChangeIcon: true, width: 3, height: 3) {
-		state "on", label: "switch2", action: "off2", icon: "st.switches.switch.on", backgroundColor: "#79b821"
-		state "off", label: "switch2", action: "on2", icon: "st.switches.switch.off", backgroundColor: "#ffffff"
+		state "on", label: "Close", action: "off2", icon: "st.contact.contact.closed", backgroundColor: "#79b821"
+		state "off", label: "Close", action: "on2", icon: "st.contact.contact.closed", backgroundColor: "#ffffff"
     }
     standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
 		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
