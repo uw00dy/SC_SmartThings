@@ -25,7 +25,7 @@ command "off1"
 command "on2"
 command "off2"
 
-fingerprint deviceId: "0x1001", inClusters:"0x86, 0x72, 0x85, 0x60, 0x8E, 0x25, 0x20, 0x70, 0x27"
+fingerprint deviceId: "0x1001", inClusters:"0x72, 0x86, 0x70, 0x85, 0x8E, 0x60, 0x25, 0x27, 0x7A, 0x73", outClusters: "0x25, 0x60"
 
 }
 
@@ -39,14 +39,13 @@ reply "200100,delay 100,2502": "command: 2503, payload: 00"
 }
 
 tiles(scale: 2){
-/*
     multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label: '${name}', action: "switch.off", icon: "st.contact.contact.open", backgroundColor: "#79b821"
 				attributeState "off", label: '${name}', action: "switch.on", icon: "st.contact.contact.closed", backgroundColor: "#ffffff"
 			}
 	}
-*/
+
 	standardTile("switch1", "device.switch1",canChangeIcon: true, width: 3, height:3) {
 		state "on", label: "Open", action: "off1", icon: "st.contact.contact.open", backgroundColor: "#79b821"
 		state "off", label: "Open", action: "on1", icon: "st.contact.contact.open", backgroundColor: "#ffffff"
