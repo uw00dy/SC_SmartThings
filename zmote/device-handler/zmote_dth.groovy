@@ -10,10 +10,9 @@
 metadata {
 	definition (name: "ZMote Button", namespace: "csc", author: "Soon Chye") {
         capability "Actuator"
-		capability "Switch"
-		capability "Momentary"
+	capability "Switch"
+	capability "Momentary"
         capability "Sensor"
-        command "DeviceTrigger"
 	}
 
     preferences {
