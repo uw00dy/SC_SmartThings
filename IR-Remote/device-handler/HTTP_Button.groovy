@@ -42,7 +42,7 @@ metadata {
 			state "off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on"
 			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#53a7c0"
 		}
-		main "DeviceTrigger"
+		main "switch"
 		details "switch"
 	}
 }
