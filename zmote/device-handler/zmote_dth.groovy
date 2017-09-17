@@ -10,15 +10,17 @@
 metadata {
 	definition (name: "ZMote Button", namespace: "csc", author: "Soon Chye") {
         capability "Actuator"
-	capability "Switch"
-	capability "Momentary"
+		capability "Switch"
+		capability "Momentary"
         capability "Sensor"
+        command "DeviceTrigger"
 	}
 
     preferences {
         input("zmote_ip", "string", title: "zmote IP address", description: "IP address of your zmote", required: true, displayDuringSetup: true)
         input("zmote_uuid", "string", title: "zmote UUID", description: "UUID of your zmote", required: true, displayDuringSetup: true)
-        input("irCommand", "string", title:"Command to be send", description: "zmote command, e.g. sendir,1:1,....", displayDuringSetup: true)
+        input("irCommand", "string", title:"Command to be send", description: "zmote command, e.g. sendir,1:1,....", required: true, displayDuringSetup: true)
+        input("irCommand2", "string", title:"Command to be send 2", description: "break the command to 2nd part if too long", required: false, displayDuringSetup: true)
     }
 
 	// simulator metadata
@@ -48,7 +50,7 @@ def push() {
     sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
     sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
     sendEvent(name: "momentary", value: "pushed", isStateChange: true)
-	send(irCommand)
+	send(irCommand + irCommand2)
 }
 
 def send(String zmote_command) {
