@@ -5,22 +5,24 @@
 *  Source: https://community.smartthings.com/t/beta-release-uri-switch-device-handler-for-controlling-items-via-http-calls/37842
 * 
 *  Credit: tguerena, surge919, CSC
+*  v1.1 - changes to enhance the behavior of the button and make it a momentary button
 */
 
 import groovy.json.JsonSlurper
 
 metadata {
 	definition (name: "HTTP Button", namespace: "sc", author: "SC") {
+	capability "Actuator"
         capability "Switch"
-		attribute "triggerswitch", "string"
-		command "DeviceTrigger"
+	capability "Momentary"
+	capability "Sensor"
 	}
 
 	preferences {
 		input("DeviceIP", "string", title:"Device IP Address", description: "Please enter your device's IP Address", required: true, displayDuringSetup: true)
 		input("DevicePort", "string", title:"Device Port", description: "Empty assumes port 80.", required: false, displayDuringSetup: true)
-		input("DevicePathOn", "string", title:"URL Path for ON", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
-		input("DevicePathOff", "string", title:"URL Path for OFF", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
+		input("DevicePathOn", "string", title:"URL Path", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
+		//input("DevicePathOff", "string", title:"URL Path for OFF", description: "Rest of the URL, include forward slash.", displayDuringSetup: true)
 		input(name: "DevicePostGet", type: "enum", title: "POST or GET", options: ["POST","GET"], defaultValue: "POST", required: false, displayDuringSetup: true)
 		section() {
 			input("HTTPAuth", "bool", title:"Requires User Auth?", description: "Choose if the HTTP requires basic authentication", defaultValue: false, required: true, displayDuringSetup: true)
@@ -36,12 +38,12 @@ metadata {
 
 	// UI tile definitions
 	tiles {
-		standardTile("DeviceTrigger", "device.triggerswitch", width: 2, height: 2, canChangeIcon: true) {
-			state "default", label: 'Push', action: "on", backgroundColor: "#ffffff", nextState: "trying"
-			state "sending", label: 'Trying', action: "off", backgroundColor: "#79b821", nextState: "off"
+		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
+			state "off", label: 'Push', action: "momentary.push", backgroundColor: "#ffffff", nextState: "on"
+			state "on", label: 'Push', action: "momentary.push", backgroundColor: "#53a7c0"
 		}
 		main "DeviceTrigger"
-			details (["DeviceTrigger"])
+		details "switch"
 	}
 }
 
@@ -50,15 +52,19 @@ def parse(String description) {
 }
 
 def on() {
-	log.debug "---ON COMMAND--- ${DevicePathOn}"
-    sendEvent(name: "triggerswitch", value: "triggeron", isStateChange: true)
-	runCmd(DevicePathOn)
+	push()
 }
 
 def off() {
-	log.debug "---OFF COMMAND--- ${DevicePathOff}"
-    sendEvent(name: "triggerswitch", value: "triggeroff", isStateChange: true)
-    runCmd(DevicePathOff)
+	push()
+}
+
+def push() {
+	log.debug "---Sending command--- ${DevicePathOn}"
+    	sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+    	sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
+    	sendEvent(name: "momentary", value: "pushed", isStateChange: true)
+	runCmd(DevicePathOn)
 }
 
 def runCmd(String varCommand) {
